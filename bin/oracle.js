@@ -108,7 +108,11 @@ async function main() {
   const options = program.parse(process.argv).opts();
 
   if (process.argv.length <= 2) {
-    program.outputHelp();
+    program.help({ error: false });
+  }
+
+  if (options.session) {
+    await attachSession(options.session);
     return;
   }
 
