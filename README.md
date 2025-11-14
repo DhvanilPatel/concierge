@@ -17,7 +17,6 @@ cp .env.example .env
 
 ```bash
 bun install
-# Ask a question with attached files so GPT-5 sees the full context
 bun ./bin/oracle.js --prompt "Summarize the risk register" \
   --file docs/risk-register.md docs/risk-matrix.md
 ```
