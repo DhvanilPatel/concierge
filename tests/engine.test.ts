@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolveEngine, type EngineMode } from '../src/cli/engine.js';
 
+// biome-ignore lint/style/useNamingConvention: env var names are uppercase with underscores
 const envWithKey = { ...process.env, OPENAI_API_KEY: 'sk-test' } as NodeJS.ProcessEnv;
 const envWithoutKey = { ...process.env } as NodeJS.ProcessEnv;
 delete envWithoutKey.OPENAI_API_KEY;
@@ -26,4 +27,3 @@ describe('resolveEngine', () => {
     expect(engine).toBe<EngineMode>('browser');
   });
 });
-
