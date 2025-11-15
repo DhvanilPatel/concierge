@@ -119,7 +119,6 @@ export async function ensureModelSelection(
     case 'option-not-found': {
       throw new Error(`Unable to find model option matching "${desiredModel}" in the model switcher.`);
     }
-    case 'button-missing':
     default: {
       throw new Error('Unable to locate the ChatGPT model selector button.');
     }
@@ -136,6 +135,16 @@ function buildModelSelectionExpression(targetModel: string): string {
     const TEST_IDS = ${idLiteral};
     const CLICK_INTERVAL_MS = 50;
     const MAX_WAIT_MS = 12000;
+    const normalizeText = (value) => {
+      if (!value) {
+        return '';
+      }
+      return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
 
     const button = document.querySelector(BUTTON_SELECTOR);
     if (!button) {
@@ -182,9 +191,16 @@ function buildModelSelectionExpression(targetModel: string): string {
         );
         for (const option of buttons) {
           const testid = (option.getAttribute('data-testid') ?? '').toLowerCase();
-          const text = option.textContent?.toLowerCase() ?? '';
+          const text = option.textContent ?? '';
+          const normalizedText = normalizeText(text);
           const matchesTestId = testid && TEST_IDS.some((id) => testid.includes(id));
-          const matchesText = LABEL_TOKENS.some((token) => text.includes(token));
+          const matchesText = LABEL_TOKENS.some((token) => {
+            const normalizedToken = normalizeText(token);
+            if (!normalizedToken) {
+              return false;
+            }
+            return normalizedText.includes(normalizedToken);
+          });
           if (matchesTestId || matchesText) {
             return option;
           }

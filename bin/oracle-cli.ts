@@ -30,6 +30,7 @@ import { buildBrowserConfig } from '../src/cli/browserConfig.js';
 import { performSessionRun } from '../src/cli/sessionRunner.js';
 import { attachSession, showStatus } from '../src/cli/sessionDisplay.js';
 import type { ShowStatusOptions } from '../src/cli/sessionDisplay.js';
+import { handleSessionCommand, type StatusOptions } from '../src/cli/sessionCommand.js';
 
 type EngineMode = 'api' | 'browser';
 
@@ -67,12 +68,6 @@ interface CliOptions extends OptionValues {
 }
 
 type ResolvedCliOptions = Omit<CliOptions, 'model'> & { model: ModelName };
-
-interface StatusOptions extends OptionValues {
-  hours: number;
-  limit: number;
-  all: boolean;
-}
 
 const VERSION = '1.0.0';
 const rawCliArgs = process.argv.slice(2);
@@ -139,19 +134,8 @@ program
   .option('--hours <hours>', 'Look back this many hours when listing sessions (default 24).', parseFloatOption, 24)
   .option('--limit <count>', 'Maximum sessions to show when listing (max 1000).', parseIntOption, 100)
   .option('--all', 'Include all stored sessions regardless of age.', false)
-  .action(async (sessionId, cmd: Command) => {
-    const sessionOptions = cmd.opts<StatusOptions>();
-    if (!sessionId) {
-      const showExamples = usesDefaultStatusFilters(cmd);
-      await showStatus({
-        hours: sessionOptions.all ? Infinity : sessionOptions.hours,
-        includeAll: sessionOptions.all,
-        limit: sessionOptions.limit,
-        showExamples,
-      });
-      return;
-    }
-    await attachSession(sessionId);
+  .action(async (sessionId, _options: StatusOptions, cmd: Command) => {
+    await handleSessionCommand(sessionId, cmd);
   });
 
 const statusCommand = program

@@ -4,6 +4,7 @@ import { DEFAULT_MODEL_TARGET, parseDuration } from '../browserMode.js';
 
 const DEFAULT_BROWSER_TIMEOUT_MS = 900_000;
 const DEFAULT_BROWSER_INPUT_TIMEOUT_MS = 30_000;
+const DEFAULT_CHROME_PROFILE = 'Default';
 
 const BROWSER_MODEL_LABELS: Record<ModelName, string> = {
   'gpt-5-pro': 'GPT-5 Pro',
@@ -31,7 +32,7 @@ export function buildBrowserConfig(options: BrowserFlagOptions): BrowserSessionC
   const baseModel = options.model.toLowerCase();
   const shouldUseOverride = normalizedOverride.length > 0 && normalizedOverride !== baseModel;
   return {
-    chromeProfile: options.browserChromeProfile ?? null,
+    chromeProfile: options.browserChromeProfile ?? DEFAULT_CHROME_PROFILE,
     chromePath: options.browserChromePath ?? null,
     url: options.browserUrl,
     timeoutMs: options.browserTimeout ? parseDuration(options.browserTimeout, DEFAULT_BROWSER_TIMEOUT_MS) : undefined,

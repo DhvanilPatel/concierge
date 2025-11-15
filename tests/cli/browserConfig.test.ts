@@ -5,7 +5,7 @@ describe('buildBrowserConfig', () => {
   test('uses defaults when optional flags omitted', () => {
     const config = buildBrowserConfig({ model: 'gpt-5-pro' });
     expect(config).toMatchObject({
-      chromeProfile: null,
+      chromeProfile: 'Default',
       chromePath: null,
       url: undefined,
       timeoutMs: undefined,
