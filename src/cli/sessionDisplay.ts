@@ -21,11 +21,19 @@ export interface ShowStatusOptions {
   showExamples?: boolean;
 }
 
+const CLEANUP_TIP =
+  'Tip: Run "oracle session clean --hours 24" to prune cached runs (add --all to wipe everything).';
+
+function printCleanupTip(): void {
+  console.log(dim(CLEANUP_TIP));
+}
+
 export async function showStatus({ hours, includeAll, limit, showExamples = false }: ShowStatusOptions): Promise<void> {
   const metas = await listSessionsMetadata();
   const { entries, truncated, total } = filterSessionsByRange(metas, { hours, includeAll, limit });
   if (!entries.length) {
     console.log('No sessions found for the requested range.');
+    printCleanupTip();
     if (showExamples) {
       printStatusExamples();
     }
@@ -41,10 +49,11 @@ export async function showStatus({ hours, includeAll, limit, showExamples = fals
   if (truncated) {
     console.log(
       chalk.yellow(
-        `Showing ${entries.length} of ${total} sessions from the requested range. Run "oracle status clear" or delete entries in ${SESSIONS_DIR} to free space, or rerun with --status-limit/--status-all.`,
+        `Showing ${entries.length} of ${total} sessions from the requested range. Run "oracle session clean" or delete entries in ${SESSIONS_DIR} to free space, or rerun with --status-limit/--status-all.`,
       ),
     );
   }
+  printCleanupTip();
   if (showExamples) {
     printStatusExamples();
   }

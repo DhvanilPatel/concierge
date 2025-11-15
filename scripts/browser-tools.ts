@@ -69,11 +69,11 @@ program
     await new Promise((resolve) => setTimeout(resolve, 1000));
     execSync(`mkdir -p "${profileDir}"`);
     if (profile) {
-      const source = path.join(os.homedir(), 'Library', 'Application Support', 'Google', 'Chrome') + '/';
+      const source = `${path.join(os.homedir(), 'Library', 'Application Support', 'Google', 'Chrome')}/`;
       execSync(`rsync -a --delete "${source}" "${profileDir}/"`, { stdio: 'ignore' });
     }
 
-    spawn(chromePath, ['--remote-debugging-port=' + port, `--user-data-dir=${profileDir}`, '--no-first-run', '--disable-popup-blocking'], {
+    spawn(chromePath, [`--remote-debugging-port=${port}`, `--user-data-dir=${profileDir}`, '--no-first-run', '--disable-popup-blocking'], {
       detached: true,
       stdio: 'ignore',
     }).unref();
@@ -134,17 +134,23 @@ program
     const { browser, page } = await getActivePage(port);
     try {
       const result = await page.evaluate((body) => {
-        const AsyncFn = Object.getPrototypeOf(async function () {}).constructor as AsyncFunctionCtor;
-        return new AsyncFn(`return (${body})`)();
+        const ASYNC_FN = Object.getPrototypeOf(async () => {}).constructor as AsyncFunctionCtor;
+        return new ASYNC_FN(`return (${body})`)();
       }, snippet);
 
       if (Array.isArray(result)) {
         result.forEach((entry, index) => {
-          if (index > 0) console.log('');
-          Object.entries(entry).forEach(([key, value]) => console.log(`${key}: ${value}`));
+          if (index > 0) {
+            console.log('');
+          }
+          Object.entries(entry).forEach(([key, value]) => {
+            console.log(`${key}: ${value}`);
+          });
         });
       } else if (typeof result === 'object' && result !== null) {
-        Object.entries(result).forEach(([key, value]) => console.log(`${key}: ${value}`));
+        Object.entries(result).forEach(([key, value]) => {
+          console.log(`${key}: ${value}`);
+        });
       } else {
         console.log(result);
       }
@@ -216,7 +222,9 @@ program
               document.removeEventListener('keydown', onKey, true);
               overlay.remove();
               banner.remove();
-              selectedElements.forEach((el) => (el.style.outline = ''));
+              selectedElements.forEach((el) => {
+                el.style.outline = '';
+              });
             };
 
             const serialize = (el: HTMLElement) => {
@@ -294,11 +302,17 @@ program
 
       if (Array.isArray(result)) {
         result.forEach((entry, index) => {
-          if (index > 0) console.log('');
-          Object.entries(entry).forEach(([key, value]) => console.log(`${key}: ${value}`));
+          if (index > 0) {
+            console.log('');
+          }
+          Object.entries(entry).forEach(([key, value]) => {
+            console.log(`${key}: ${value}`);
+          });
         });
       } else if (result && typeof result === 'object') {
-        Object.entries(result).forEach(([key, value]) => console.log(`${key}: ${value}`));
+        Object.entries(result).forEach(([key, value]) => {
+          console.log(`${key}: ${value}`);
+        });
       } else {
         console.log(result);
       }

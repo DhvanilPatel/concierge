@@ -133,7 +133,7 @@ program
   .option('--debug-help', 'Show the advanced/debug option set and exit.', false)
   .showHelpAfterError('(use --help for usage)');
 
-program
+const sessionCommand = program
   .command('session [id]')
   .description('Attach to a stored session or list recent sessions when no ID is provided.')
   .option('--hours <hours>', 'Look back this many hours when listing sessions (default 24).', parseFloatOption, 24)
@@ -141,6 +141,18 @@ program
   .option('--all', 'Include all stored sessions regardless of age.', false)
   .action(async (sessionId, _options: StatusOptions, cmd: Command) => {
     await handleSessionCommand(sessionId, cmd);
+  });
+
+sessionCommand
+  .command('clean')
+  .description('Delete stored sessions older than the provided window (24h default).')
+  .option('--hours <hours>', 'Delete sessions older than this many hours (default 24).', parseFloatOption, 24)
+  .option('--all', 'Delete all stored sessions.', false)
+  .action(async (_options, command: Command) => {
+    const cleanOptions = command.opts<StatusOptions>();
+    const result = await deleteSessionsOlderThan({ hours: cleanOptions.hours, includeAll: cleanOptions.all });
+    const scope = cleanOptions.all ? 'all stored sessions' : `sessions older than ${cleanOptions.hours}h`;
+    console.log(`Deleted ${result.deleted} ${result.deleted === 1 ? 'session' : 'sessions'} (${scope}).`);
   });
 
 const statusCommand = program
