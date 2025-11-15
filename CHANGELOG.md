@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.4 — 2025-11-15
+
+### Added
+- Logs the masked OpenAI key in use (`Using OPENAI_API_KEY=xxxx****yyyy`) so runs are traceable without leaking secrets.
+
 ## 1.0.3 — 2025-11-15
 
 ### Added

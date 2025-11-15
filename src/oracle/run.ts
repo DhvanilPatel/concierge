@@ -56,6 +56,14 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
     wait = defaultWait,
   } = deps;
 
+  const maskApiKey = (key: string | undefined | null): string | null => {
+    if (!key) return null;
+    if (key.length <= 8) return `${key[0] ?? ''}***${key[key.length - 1] ?? ''}`;
+    const prefix = key.slice(0, 4);
+    const suffix = key.slice(-4);
+    return `${prefix}****${suffix}`;
+  };
+
   const logVerbose = (message: string): void => {
     if (options.verbose) {
       log(dim(`[verbose] ${message}`));
@@ -69,6 +77,11 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
     throw new PromptValidationError('Missing OPENAI_API_KEY. Set it via the environment or a .env file.', {
       env: 'OPENAI_API_KEY',
     });
+  }
+
+  const maskedKey = maskApiKey(apiKey);
+  if (maskedKey) {
+    log(dim(`Using OPENAI_API_KEY=${maskedKey}`));
   }
 
   const modelConfig = MODEL_CONFIGS[options.model];

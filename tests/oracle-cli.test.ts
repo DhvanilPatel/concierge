@@ -213,6 +213,31 @@ describe('buildPrompt', () => {
   });
 });
 
+describe('api key logging', () => {
+  test('logs masked OPENAI_API_KEY', async () => {
+    const stream = new MockStream([], buildResponse());
+    const client = new MockClient(stream);
+    const logs: string[] = [];
+    await runOracle(
+      {
+        prompt: 'Key log test',
+        model: 'gpt-5-pro',
+        background: false,
+      },
+      {
+        apiKey: 'sk-supersecret-key-1234',
+        client,
+        log: (msg: string) => logs.push(msg),
+        write: () => true,
+      },
+    );
+
+    const combined = logs.join('\n');
+    expect(combined).toContain('Using OPENAI_API_KEY=sk-s****1234');
+    expect(combined).not.toContain('supersecret');
+  });
+});
+
 describe('runOracle preview mode', () => {
   test('prints request JSON when preview mode is json', async () => {
     const logs: string[] = [];
@@ -236,7 +261,7 @@ describe('runOracle preview mode', () => {
     }
     expect(result.previewMode).toBe('json');
     expect(result.requestBody?.tools).toEqual([{ type: 'web_search_preview' }]);
-    expect(logs[0]).toBe('Request JSON');
+    expect(logs.some((line) => line === 'Request JSON')).toBe(true);
     expect(logs.some((line) => line.startsWith('Oracle ('))).toBe(false);
   });
 
@@ -457,7 +482,7 @@ describe('runOracle file reports', () => {
         log: (msg: string) => logs.push(msg),
       },
     );
-    expect(logs[0].startsWith('Oracle (')).toBe(true);
+    expect(logs.some((line) => line.startsWith('Oracle ('))).toBe(true);
     const fileUsageIndex = logs.indexOf('File Token Usage');
     expect(fileUsageIndex).toBeGreaterThan(-1);
     const fileLines = logs.slice(fileUsageIndex + 1, fileUsageIndex + 3);
@@ -492,7 +517,7 @@ describe('runOracle file reports', () => {
         },
       ),
     ).rejects.toThrow('Input too large');
-    expect(logs[0].startsWith('Oracle (')).toBe(true);
+    expect(logs.some((line) => line.startsWith('Oracle ('))).toBe(true);
     expect(logs.find((line) => line === 'File Token Usage')).toBeDefined();
   });
 
@@ -522,7 +547,7 @@ describe('runOracle file reports', () => {
       },
     );
 
-    expect(logs[0].startsWith('Oracle (')).toBe(true);
+    expect(logs.some((line) => line.startsWith('Oracle ('))).toBe(true);
     const fileLogIndex = logs.indexOf('File Token Usage');
     expect(fileLogIndex).toBeGreaterThan(-1);
     expect(logs.some((line) => line.includes('note.txt'))).toBe(true);
