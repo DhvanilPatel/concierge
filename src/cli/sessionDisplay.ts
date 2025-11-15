@@ -57,12 +57,7 @@ export async function attachSession(sessionId: string): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  const reattachLine = buildReattachLine(metadata);
-  if (reattachLine) {
-    console.log(chalk.blue(reattachLine));
-  } else {
-    console.log(chalk.bold(`Session ${sessionId}`));
-  }
+  console.log(chalk.bold(`Session: ${sessionId}`));
   console.log(`Created: ${metadata.createdAt}`);
   console.log(`Status: ${metadata.status}`);
   console.log(`Model: ${metadata.model}`);
@@ -96,7 +91,8 @@ export async function attachSession(sessionId: string): Promise<void> {
     if (latest.status === 'completed' || latest.status === 'error') {
       await printNew();
       if (latest.status === 'error' && latest.errorMessage) {
-        console.log(`\nSession failed: ${latest.errorMessage}`);
+        console.log('\nResult:');
+        console.log(`Session failed: ${latest.errorMessage}`);
       }
       if (latest.usage) {
         const usage = latest.usage;
@@ -161,17 +157,6 @@ export function buildReattachLine(metadata: SessionMetadata): string | null {
   return null;
 }
 
-function printStatusExamples(): void {
-  console.log('');
-  console.log(chalk.bold('Usage Examples'));
-  console.log(`${chalk.bold('  oracle status --hours 72 --limit 50')}`);
-  console.log(dim('    Show 72h of history capped at 50 entries.'));
-  console.log(`${chalk.bold('  oracle status clear --hours 168')}`);
-  console.log(dim('    Delete sessions older than 7 days (use --all to wipe everything).'));
-  console.log(`${chalk.bold('  oracle session <session-id>')}`);
-  console.log(dim('    Attach to a specific running/completed session to stream its output.'));
-}
-
 function formatRelativeDuration(referenceIso: string): string | null {
   const timestamp = Date.parse(referenceIso);
   if (Number.isNaN(timestamp)) {
@@ -209,4 +194,15 @@ function formatRelativeDuration(referenceIso: string): string | null {
     parts.push(`${remainingMinutes}m`);
   }
   return parts.join(' ');
+}
+
+function printStatusExamples(): void {
+  console.log('');
+  console.log(chalk.bold('Usage Examples'));
+  console.log(`${chalk.bold('  oracle status --hours 72 --limit 50')}`);
+  console.log(dim('    Show 72h of history capped at 50 entries.'));
+  console.log(`${chalk.bold('  oracle status clear --hours 168')}`);
+  console.log(dim('    Delete sessions older than 7 days (use --all to wipe everything).'));
+  console.log(`${chalk.bold('  oracle session <session-id>')}`);
+  console.log(dim('    Attach to a specific running/completed session to stream its output.'));
 }

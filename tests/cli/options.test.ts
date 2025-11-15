@@ -8,6 +8,7 @@ import {
   resolvePreviewMode,
   resolveApiModel,
   inferModelFromLabel,
+  normalizeModelOption,
 } from '../../src/cli/options.ts';
 
 describe('collectPaths', () => {
@@ -70,6 +71,13 @@ describe('parseSearchOption', () => {
   });
 });
 
+describe('normalizeModelOption', () => {
+  test('trims whitespace safely', () => {
+    expect(normalizeModelOption('  gpt-5-pro  ')).toBe('gpt-5-pro');
+    expect(normalizeModelOption(undefined)).toBe('');
+  });
+});
+
 describe('resolveApiModel', () => {
   test('accepts canonical names regardless of case', () => {
     expect(resolveApiModel('gpt-5-pro')).toBe('gpt-5-pro');
@@ -90,9 +98,16 @@ describe('inferModelFromLabel', () => {
   test('infers ChatGPT Instant variants as gpt-5.1', () => {
     expect(inferModelFromLabel('ChatGPT 5.1 Instant')).toBe('gpt-5.1');
     expect(inferModelFromLabel('5.1 thinking')).toBe('gpt-5.1');
+    expect(inferModelFromLabel(' 5.1 FAST ')).toBe('gpt-5.1');
   });
 
   test('falls back to pro when the label references pro', () => {
     expect(inferModelFromLabel('ChatGPT Pro')).toBe('gpt-5-pro');
+    expect(inferModelFromLabel('GPT-5 Pro (Classic)')).toBe('gpt-5-pro');
+  });
+
+  test('falls back to gpt-5-pro when label empty and to gpt-5.1 for other ambiguous strings', () => {
+    expect(inferModelFromLabel('')).toBe('gpt-5-pro');
+    expect(inferModelFromLabel('something else')).toBe('gpt-5.1');
   });
 });

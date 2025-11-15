@@ -63,4 +63,12 @@ describe('buildBrowserConfig', () => {
     });
     expect(config.desiredModel).toBe('ChatGPT 5.1');
   });
+
+  test('trims whitespace around override labels', () => {
+    const config = buildBrowserConfig({
+      model: 'gpt-5.1',
+      browserModelLabel: '  ChatGPT 5.1 Instant  ',
+    });
+    expect(config.desiredModel).toBe('ChatGPT 5.1 Instant');
+  });
 });

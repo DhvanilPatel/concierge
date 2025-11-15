@@ -329,7 +329,7 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     process.cwd(),
   );
   const liveRunOptions: RunOracleOptions = { ...baseRunOptions, sessionId: sessionMeta.id };
-  await runInteractiveSession(sessionMeta, liveRunOptions, sessionMode, browserConfig);
+  await runInteractiveSession(sessionMeta, liveRunOptions, sessionMode, browserConfig, true);
   console.log(chalk.bold(`Session ${sessionMeta.id} completed`));
 }
 
@@ -338,13 +338,18 @@ async function runInteractiveSession(
   runOptions: RunOracleOptions,
   mode: SessionMode,
   browserConfig?: BrowserSessionConfig,
+  showReattachHint = true,
 ): Promise<void> {
   const { logLine, writeChunk, stream } = createSessionLogWriter(sessionMeta.id);
   let headerAugmented = false;
   const combinedLog = (message = ''): void => {
     if (!headerAugmented && message.startsWith('Oracle (')) {
       headerAugmented = true;
-      console.log(`${message}\n${chalk.blue(`Reattach via: oracle session ${sessionMeta.id}`)}`);
+      if (showReattachHint) {
+        console.log(`${message}\n${chalk.blue(`Reattach via: oracle session ${sessionMeta.id}`)}`);
+      } else {
+        console.log(message);
+      }
       logLine(message);
       return;
     }
