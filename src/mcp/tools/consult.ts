@@ -7,9 +7,11 @@ import {
   createSessionLogWriter,
   initializeSession,
   readSessionMetadata,
+  type BrowserSessionConfig,
 } from '../../sessionManager.js';
 import { performSessionRun } from '../../cli/sessionRunner.js';
 import { consultInputSchema } from '../types.js';
+import { CHATGPT_URL } from '../../browser/constants.js';
 
 const consultOutputSchema = z.object({
   sessionId: z.string(),
@@ -45,11 +47,25 @@ export function registerConsultTool(server: McpServer): void {
         };
       }
 
+      let browserConfig: BrowserSessionConfig | undefined;
+      const desiredModelLabel = model?.trim();
+      if (resolvedEngine === 'browser') {
+        browserConfig = {
+          url: CHATGPT_URL,
+          cookieSync: true,
+          headless: false,
+          hideWindow: false,
+          keepBrowser: false,
+          desiredModel: desiredModelLabel || undefined,
+        };
+      }
+
       const sessionMeta = await initializeSession(
         {
           ...runOptions,
           mode: resolvedEngine,
           slug,
+          browserConfig,
         },
         cwd,
       );
@@ -86,7 +102,7 @@ export function registerConsultTool(server: McpServer): void {
           sessionMeta,
           runOptions,
           mode: resolvedEngine,
-          browserConfig: undefined,
+          browserConfig,
           cwd,
           log,
           write,
