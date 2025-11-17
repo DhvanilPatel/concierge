@@ -39,8 +39,8 @@ importers:
         specifier: ^4.1.5
         version: 4.1.5
       markdansi:
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.1.1
+        version: 0.1.1
       openai:
         specifier: ^6.9.0
         version: 6.9.0(ws@8.18.3)
@@ -1104,8 +1104,8 @@ packages:
     resolution: {integrity: sha512-+zopwDy7DNknmwPQplem5lAZX/eCOzSvSNNcSKm5eVwTkOBzoktEfXsa9L23J/GIRhxRsaxzkPEhrJEpE2F4Gg==}
     engines: {node: '>= 10'}
 
-  markdansi@0.1.0:
-    resolution: {integrity: sha512-ZvFNpNbYlR3WcnHDDbKUDns7V6MaCztg1m3MwlyfmJYB+uz+b3xdqT2iAf9KQLyThctTRkQL4VK3NQlFRA7uqA==}
+  markdansi@0.1.1:
+    resolution: {integrity: sha512-QjV0kFInXMU+Ug8EQ6dE49MBmscrOl0HGfwzknjmkmEnRtbAl3AgZy6odBEIEdHc2M4SUAwJW7KJap7svMnP/g==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -2797,7 +2797,7 @@ snapshots:
       - supports-color
     optional: true
 
-  markdansi@0.1.0:
+  markdansi@0.1.1:
     dependencies:
       chalk: 5.6.2
       mdast-util-from-markdown: 2.0.2
