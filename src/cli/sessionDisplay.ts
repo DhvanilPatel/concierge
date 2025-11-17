@@ -75,6 +75,16 @@ export interface AttachSessionOptions {
   renderMarkdown?: boolean;
 }
 
+type LiveRenderState = {
+  pending: string;
+  inFence: boolean;
+  fenceDelimiter?: string;
+  inTable: boolean;
+  renderedBytes: number;
+  fallback: boolean;
+  noticedFallback: boolean;
+};
+
 export async function attachSession(sessionId: string, options?: AttachSessionOptions): Promise<void> {
   const metadata = await readSessionMetadata(sessionId);
   if (!metadata) {
@@ -144,12 +154,68 @@ export async function attachSession(sessionId: string, options?: AttachSessionOp
     }
   }
 
+  const liveRenderState: LiveRenderState | null = wantsRender && isTty()
+    ? { pending: '', inFence: false, inTable: false, renderedBytes: 0, fallback: false, noticedFallback: false }
+    : null;
+
   let lastLength = 0;
+  const renderLiveChunk = (chunk: string): void => {
+    if (!liveRenderState || chunk.length === 0) {
+      process.stdout.write(chunk);
+      return;
+    }
+    if (liveRenderState.fallback) {
+      process.stdout.write(chunk);
+      return;
+    }
+
+    liveRenderState.pending += chunk;
+    const { chunks, remainder } = extractRenderableChunks(liveRenderState.pending, liveRenderState);
+    liveRenderState.pending = remainder;
+
+    for (const candidate of chunks) {
+      const projected = liveRenderState.renderedBytes + Buffer.byteLength(candidate, 'utf8');
+      if (projected > MAX_RENDER_BYTES) {
+        if (!liveRenderState.noticedFallback) {
+          console.log(dim(`Render skipped (log too large: > ${MAX_RENDER_BYTES} bytes). Showing raw text.`));
+          liveRenderState.noticedFallback = true;
+        }
+        liveRenderState.fallback = true;
+        process.stdout.write(candidate + liveRenderState.pending);
+        liveRenderState.pending = '';
+        return;
+      }
+      process.stdout.write(renderMarkdownAnsi(candidate));
+      liveRenderState.renderedBytes += Buffer.byteLength(candidate, 'utf8');
+    }
+  };
+
+  const flushRemainder = (): void => {
+    if (!liveRenderState || liveRenderState.fallback) {
+      return;
+    }
+    if (liveRenderState.pending.length === 0) {
+      return;
+    }
+    const text = liveRenderState.pending;
+    liveRenderState.pending = '';
+    const projected = liveRenderState.renderedBytes + Buffer.byteLength(text, 'utf8');
+    if (projected > MAX_RENDER_BYTES) {
+      if (!liveRenderState.noticedFallback) {
+        console.log(dim(`Render skipped (log too large: > ${MAX_RENDER_BYTES} bytes). Showing raw text.`));
+      }
+      process.stdout.write(text);
+      liveRenderState.fallback = true;
+      return;
+    }
+    process.stdout.write(renderMarkdownAnsi(text));
+  };
+
   const printNew = async () => {
     const text = await readSessionLog(sessionId);
     const nextChunk = text.slice(lastLength);
     if (nextChunk.length > 0) {
-      process.stdout.write(nextChunk);
+      renderLiveChunk(nextChunk);
       lastLength = text.length;
     }
   };
@@ -164,6 +230,7 @@ export async function attachSession(sessionId: string, options?: AttachSessionOp
     }
     if (latest.status === 'completed' || latest.status === 'error') {
       await printNew();
+      flushRemainder();
       if (!options?.suppressMetadata) {
         if (latest.status === 'error' && latest.errorMessage) {
           console.log('\nResult:');
@@ -308,4 +375,45 @@ function printStatusExamples(): void {
   console.log(`${chalk.bold('  oracle session <session-id>')}`);
   console.log(dim('    Attach to a specific running/completed session to stream its output.'));
   console.log(dim(CLEANUP_TIP));
+}
+
+function extractRenderableChunks(text: string, state: LiveRenderState): { chunks: string[]; remainder: string } {
+  const chunks: string[] = [];
+  let buffer = '';
+  const lines = text.split(/(\n)/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const segment = lines[i];
+    if (segment === '\n') {
+      buffer += segment;
+      // Detect code fences
+      const prev = lines[i - 1] ?? '';
+      const fenceMatch = prev.match(/^(\s*)(`{3,}|~{3,})(.*)$/);
+      if (!state.inFence && fenceMatch) {
+        state.inFence = true;
+        state.fenceDelimiter = fenceMatch[2];
+      } else if (state.inFence && state.fenceDelimiter && prev.startsWith(state.fenceDelimiter)) {
+        state.inFence = false;
+        state.fenceDelimiter = undefined;
+      }
+
+      const trimmed = prev.trim();
+      if (!state.inFence) {
+        if (!state.inTable && trimmed.startsWith('|') && trimmed.includes('|')) {
+          state.inTable = true;
+        }
+        if (state.inTable && trimmed === '') {
+          state.inTable = false;
+        }
+      }
+
+      const safeBreak = !state.inFence && !state.inTable && trimmed === '';
+      if (safeBreak) {
+        chunks.push(buffer);
+        buffer = '';
+      }
+      continue;
+    }
+    buffer += segment;
+  }
+  return { chunks, remainder: buffer };
 }

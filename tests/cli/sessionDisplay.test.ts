@@ -159,4 +159,40 @@ describe('attachSession rendering', () => {
     expect(markdownMock.renderMarkdownAnsi).not.toHaveBeenCalled();
     expect(writeSpy).toHaveBeenCalled(); // raw write
   });
+
+  test('streams rendered chunks during running sessions and honors safe breaks', async () => {
+    const runningMeta: SessionMetadata = { ...baseMeta, status: 'running' };
+    const completedMeta: SessionMetadata = { ...baseMeta, status: 'completed' };
+    readSessionMetadataMock.mockResolvedValueOnce(runningMeta).mockResolvedValueOnce(completedMeta);
+    readSessionLogMock
+      .mockResolvedValueOnce('Answer:\n| a | b |\n')
+      .mockResolvedValueOnce('Answer:\n| a | b |\n| c | d |\n\nDone\n');
+    const writeSpy = vi.spyOn(process.stdout, 'write');
+    (sessionManagerMock.wait as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    await attachSession('sess', { renderMarkdown: true });
+
+    expect(markdownMock.renderMarkdownAnsi).toHaveBeenCalledTimes(2);
+    expect(markdownMock.renderMarkdownAnsi).toHaveBeenNthCalledWith(1, 'Answer:\n| a | b |\n| c | d |\n\n');
+    expect(markdownMock.renderMarkdownAnsi).toHaveBeenNthCalledWith(2, 'Done\n');
+    expect(writeSpy).toHaveBeenCalledWith('RENDER:Answer:\n| a | b |\n| c | d |\n\n');
+    expect(writeSpy).toHaveBeenCalledWith('RENDER:Done\n');
+  });
+
+  test('falls back to raw streaming when live render exceeds cap', async () => {
+    const runningMeta: SessionMetadata = { ...baseMeta, status: 'running' };
+    const completedMeta: SessionMetadata = { ...baseMeta, status: 'completed' };
+    readSessionMetadataMock.mockResolvedValueOnce(runningMeta).mockResolvedValueOnce(completedMeta);
+    const huge = 'A'.repeat(210_000);
+    readSessionLogMock.mockResolvedValueOnce(huge);
+    const writeSpy = vi.spyOn(process.stdout, 'write');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    (sessionManagerMock.wait as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    await attachSession('sess', { renderMarkdown: true });
+
+    expect(markdownMock.renderMarkdownAnsi).not.toHaveBeenCalled();
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Render skipped'));
+    expect(writeSpy).toHaveBeenCalledWith(huge);
+  });
 });
