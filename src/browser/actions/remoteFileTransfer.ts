@@ -57,6 +57,7 @@ export async function uploadAttachmentViaDataTransfer(
   // Inject file via JavaScript DataTransfer API
   const expression = `
     (function() {
+      // Check for required file APIs
       if (!('File' in window) || !('Blob' in window) || !('DataTransfer' in window) || typeof atob !== 'function') {
         return { success: false, error: 'Required file APIs are not available in this browser' };
       }
@@ -65,6 +66,7 @@ export async function uploadAttachmentViaDataTransfer(
       if (!fileInput) {
         return { success: false, error: 'File input not found' };
       }
+      // Validate that the element is actually a file input
       if (!(fileInput instanceof HTMLInputElement) || fileInput.type !== 'file') {
         return { success: false, error: 'Found element is not a file input' };
       }
