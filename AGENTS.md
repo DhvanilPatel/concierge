@@ -104,3 +104,8 @@ Edit guidance: keep the actual tool list inside the `<tools></tools>` block belo
 </tools>
 
 Guideline: ignore any project folders whose names either contain "copy" or end with a number (e.g., `sweetistics copy`, `sweetistics2`, `VibeMeter3`).
+
+## Project-specific notes (Oracle CLI)
+
+- **Live smoke tests:** OpenAI live tests are opt-in. Run `ORACLE_LIVE_TEST=1 pnpm vitest run tests/live/openai-live.test.ts` with a real `OPENAI_API_KEY` when you want to cover the background path. gpt-5-pro can take ~10 minutes.
+- **Wait defaults:** gpt-5-pro API runs now detach by default; use `--wait` to stay attached. gpt-5.1 and browser runs block by default. Every run prints `oracle session <id>` for reattach.

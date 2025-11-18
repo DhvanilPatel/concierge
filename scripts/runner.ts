@@ -1501,8 +1501,6 @@ function resolveSummaryStyle(rawValue: string | undefined | null): SummaryStyle 
       return 'minimal';
     case 'verbose':
       return 'verbose';
-    case 'compact':
-    case 'short':
     default:
       return 'compact';
   }
@@ -1516,6 +1514,7 @@ function formatCompletionSummary(options: {
 }): string {
   const { exitCode, elapsedMs, timedOut, commandLabel } = options;
   const durationText = typeof elapsedMs === 'number' ? formatDuration(elapsedMs) : null;
+  // biome-ignore lint/nursery/noUnnecessaryConditions: SUMMARY_STYLE is always set; switch is intentional
   switch (SUMMARY_STYLE) {
     case 'minimal': {
       const parts = [`${exitCode}`];
@@ -1532,7 +1531,6 @@ function formatCompletionSummary(options: {
       const timeoutPart = timedOut ? '; timed out' : '';
       return `[runner] Finished ${commandLabel} (exit ${exitCode}${elapsedPart}${timeoutPart}).`;
     }
-    case 'compact':
     default: {
       const elapsedPart = durationText ? ` in ${durationText}` : '';
       const timeoutPart = timedOut ? ' (timeout)' : '';
