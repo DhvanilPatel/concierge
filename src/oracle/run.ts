@@ -159,13 +159,13 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
     if (maskedKey) {
       const resolvedSuffix =
         options.model.startsWith('gemini') && effectiveModelId !== modelConfig.model ? ` (resolved: ${effectiveModelId})` : '';
-      log(`Using ${envVar}=${maskedKey} for model ${modelConfig.model}${resolvedSuffix}`);
+      log(dim(`Using ${envVar}=${maskedKey} for model ${modelConfig.model}${resolvedSuffix}`));
     }
     if (baseUrl) {
-      log(`Base URL: ${formatBaseUrlForLog(baseUrl)}`);
+      log(dim(`Base URL: ${formatBaseUrlForLog(baseUrl)}`));
     }
     if (pendingNoFilesTip) {
-      log(pendingNoFilesTip);
+      log(dim(pendingNoFilesTip));
     }
     if (options.model === 'gpt-5-pro') {
       log(dim('Pro is thinking, this can take up to 30 minutes...'));
