@@ -13,6 +13,7 @@ import { performSessionRun } from '../../cli/sessionRunner.js';
 import { CHATGPT_URL } from '../../browser/constants.js';
 import { consultInputSchema } from '../types.js';
 import { loadUserConfig } from '../../config.js';
+import { resolveNotificationSettings } from '../../cli/notifier.js';
 
 // Use raw shapes so the MCP SDK (with its bundled Zod) wraps them and emits valid JSON Schema.
 const consultInputShape = {
@@ -81,6 +82,13 @@ export function registerConsultTool(server: McpServer): void {
         };
       }
 
+      const notifications = resolveNotificationSettings({
+        cliNotify: undefined,
+        cliNotifySound: undefined,
+        env: process.env,
+        config: userConfig.notify,
+      });
+
       const sessionMeta = await initializeSession(
         {
           ...runOptions,
@@ -89,6 +97,7 @@ export function registerConsultTool(server: McpServer): void {
           browserConfig,
         },
         cwd,
+        notifications,
       );
 
       const logWriter = createSessionLogWriter(sessionMeta.id);
@@ -128,6 +137,7 @@ export function registerConsultTool(server: McpServer): void {
           log,
           write,
           version: getCliVersion(),
+          notifications,
         });
       } catch (error) {
         log(`Run failed: ${error instanceof Error ? error.message : String(error)}`);
