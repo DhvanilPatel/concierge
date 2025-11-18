@@ -251,6 +251,10 @@ function buildModelSelectionExpression(targetModel: string): string {
   })()`;
 }
 
+export function buildModelMatchersLiteralForTest(targetModel: string) {
+  return buildModelMatchersLiteral(targetModel);
+}
+
 function buildModelMatchersLiteral(targetModel: string): { labelTokens: string[]; testIdTokens: string[] } {
   const base = targetModel.trim().toLowerCase();
   const labelTokens = new Set<string>();
