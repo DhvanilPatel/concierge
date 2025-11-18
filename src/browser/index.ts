@@ -265,7 +265,7 @@ export function formatThinkingLog(startedAt: number, now: number, message: strin
     .toString()
     .padStart(3, ' ');
   const statusLabel = message ? ` — ${message}` : '';
-  return `[${elapsedText} / ~10m] ${bar} ${pct}%${statusLabel}${locatorSuffix}`;
+  return `${bar} ${pct}% [${elapsedText} / ~10m]${statusLabel}${locatorSuffix}`;
 }
 
 function startThinkingStatusMonitor(
