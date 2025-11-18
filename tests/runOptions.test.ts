@@ -84,7 +84,7 @@ describe('estimateRequestTokens', () => {
       background: true,
       store: true,
     };
-    const estimate = estimateRequestTokens(request as any, modelConfig, 10);
+    const estimate = estimateRequestTokens(request as unknown as Parameters<typeof estimateRequestTokens>[0], modelConfig, 10);
     // Rough sanity: base tokenizer on text parts should be > 0; buffer ensures > base.
     expect(estimate).toBeGreaterThan(10);
   });
@@ -95,7 +95,7 @@ describe('estimateRequestTokens', () => {
       instructions: 'a',
       input: [{ role: 'user', content: [{ type: 'input_text', text: 'b' }] }],
     };
-    const estimate = estimateRequestTokens(request as any, modelConfig, 50);
+    const estimate = estimateRequestTokens(request as unknown as Parameters<typeof estimateRequestTokens>[0], modelConfig, 50);
     expect(estimate).toBeGreaterThanOrEqual(50);
   });
 });

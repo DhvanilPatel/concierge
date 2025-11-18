@@ -48,8 +48,8 @@ export function registerSessionsTool(server: McpServer): void {
       title: 'List or fetch oracle sessions',
       description:
         'List stored sessions (same defaults as `oracle status`) or, with id/slug, return a summary row. Pass detail:true to include metadata, log, and stored request for that session.',
-      inputSchema: sessionsInputShape as any,
-      outputSchema: sessionsOutputShape as any,
+      inputSchema: sessionsInputShape,
+      outputSchema: sessionsOutputShape,
     },
     async (input: unknown) => {
       const textContent = (text: string) => [{ type: 'text' as const, text }];

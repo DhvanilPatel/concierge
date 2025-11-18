@@ -54,8 +54,8 @@ export function registerConsultTool(server: McpServer): void {
       description:
         'Run a one-shot Oracle session (API or browser). Attach files/dirs for context, optional model/engine overrides, and an optional slug. Background handling follows the CLI defaults; browser runs only start when Chrome is available.',
       // Cast to any to satisfy SDK typings across differing Zod versions.
-      inputSchema: consultInputShape as any,
-      outputSchema: consultOutputShape as any,
+      inputSchema: consultInputShape,
+      outputSchema: consultOutputShape,
     },
     async (input: unknown) => {
       const textContent = (text: string) => [{ type: 'text' as const, text }];
@@ -118,7 +118,6 @@ export function registerConsultTool(server: McpServer): void {
       );
 
       const logWriter = createSessionLogWriter(sessionMeta.id);
-      let output = '';
       // Best-effort: emit MCP logging notifications for live chunks but never block the run.
       const sendLog = (text: string, level: 'info' | 'debug' = 'info') =>
         server.server
@@ -158,13 +157,7 @@ export function registerConsultTool(server: McpServer): void {
         log(`Run failed: ${error instanceof Error ? error.message : String(error)}`);
         return {
           isError: true,
-          content: textContent(output),
-          structuredContent: {
-            sessionId: sessionMeta.id,
-            status: 'error',
-            output,
-            metadata: await readSessionMetadata(sessionMeta.id),
-          },
+          content: textContent(`Session ${sessionMeta.id} failed: ${error instanceof Error ? error.message : String(error)}`),
         };
       } finally {
         logWriter.stream.end();
@@ -175,9 +168,7 @@ export function registerConsultTool(server: McpServer): void {
         const summary = `Session ${sessionMeta.id} (${finalMeta.status})`;
         const logTail = await readSessionLogTail(sessionMeta.id, 4000);
         return {
-          content: textContent(
-            [summary, logTail || '(log empty)'].join('\n').trim(),
-          ),
+          content: textContent([summary, logTail || '(log empty)'].join('\n').trim()),
           structuredContent: {
             sessionId: sessionMeta.id,
             status: finalMeta.status,

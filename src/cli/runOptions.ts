@@ -36,12 +36,7 @@ export function resolveRunOptionsFromConfig({
       ? `${prompt.trim()}\n${userConfig.promptSuffix}`
       : prompt;
 
-  const search =
-    userConfig?.search === 'off'
-      ? false
-      : userConfig?.search === 'on'
-        ? true
-        : true;
+  const search = userConfig?.search !== 'off';
 
   const heartbeatIntervalMs =
     userConfig?.heartbeatSeconds !== undefined ? userConfig.heartbeatSeconds * 1000 : 30_000;
