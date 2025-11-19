@@ -31,7 +31,7 @@
 - Experimental cookie controls (hidden flags/env):
   - `--browser-cookie-names <comma-list>` or `ORACLE_BROWSER_COOKIE_NAMES`: allowlist which cookies to sync. Useful for “only NextAuth/Cloudflare, drop the rest.”
   - `--browser-inline-cookies <jsonOrBase64>` or `ORACLE_BROWSER_COOKIES_JSON`: skip Chrome/keychain and set cookies directly. Payload is a JSON array of DevTools `CookieParam` objects (or the same, base64-encoded). At minimum you need `name`, `value`, and either `url` or `domain`; we infer `path=/`, `secure=true`, `httpOnly=false`.
-  - Practical minimal set that keeps ChatGPT logged in: `__Secure-next-auth.session-token` (include `.0`/`.1` variants) plus any active Cloudflare proofs (`cf_clearance`, `__cf_bm`/`_cfuvid`/`CF_Authorization`/`__cflb`). Everything else re-mints after login.
+  - Practical minimal set that keeps ChatGPT logged in and avoids the workspace picker: `__Secure-next-auth.session-token` (include `.0`/`.1` variants), `_account` (active workspace/account), and any active Cloudflare proofs (`cf_clearance`, `__cf_bm`/`_cfuvid`/`CF_Authorization`/`__cflb`). Everything else re-mints after login.
 
 All options are persisted with the session so reruns (`oracle exec <id>`) reuse the same automation settings.
 
