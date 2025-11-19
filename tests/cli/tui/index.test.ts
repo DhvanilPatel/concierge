@@ -94,11 +94,7 @@ describe('askOracleFlow', () => {
         file: [],
       }),
       expect.any(String),
-<<<<<<< HEAD
       expect.objectContaining({ enabled: expectedNotifyEnabled, sound: false }),
-=======
-      expect.objectContaining({ enabled: expectedNotifyEnabled }),
->>>>>>> 5d93332 (fix: stabilize TUI tests for notification defaults)
     );
     expect(performSessionRunMock).toHaveBeenCalledTimes(1);
     expect(performSessionRunMock.mock.calls[0][0].sessionMeta.id).toBe('sess-123');
