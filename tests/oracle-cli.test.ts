@@ -253,6 +253,58 @@ describe('api key logging', () => {
     expect(combined).not.toContain('gemini-secret');
   });
 
+  test('throws when OPENAI_API_KEY is missing for API engine', async () => {
+    const originalOpenai = process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    try {
+      await expect(
+        runOracle(
+          {
+            prompt: 'Needs key',
+            model: 'gpt-5-pro',
+            background: false,
+          },
+          {
+            log: () => {},
+            write: () => true,
+          },
+        ),
+      ).rejects.toThrow(/Missing OPENAI_API_KEY/);
+    } finally {
+      if (originalOpenai !== undefined) {
+        process.env.OPENAI_API_KEY = originalOpenai;
+      } else {
+        delete process.env.OPENAI_API_KEY;
+      }
+    }
+  });
+
+  test('throws when GEMINI_API_KEY is missing for gemini API engine', async () => {
+    const originalGemini = process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_API_KEY;
+    try {
+      await expect(
+        runOracle(
+          {
+            prompt: 'Needs gemini key',
+            model: 'gemini-3-pro',
+            background: false,
+          },
+          {
+            log: () => {},
+            write: () => true,
+          },
+        ),
+      ).rejects.toThrow(/Missing GEMINI_API_KEY/);
+    } finally {
+      if (originalGemini !== undefined) {
+        process.env.GEMINI_API_KEY = originalGemini;
+      } else {
+        delete process.env.GEMINI_API_KEY;
+      }
+    }
+  });
+
   test('single-line summary includes session id when provided', async () => {
     const stream = new MockStream([], buildResponse());
     const client = new MockClient(stream);
