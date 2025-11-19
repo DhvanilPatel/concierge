@@ -672,7 +672,7 @@ describe('runOracle streaming output', () => {
     );
 
     expect(result.mode).toBe('live');
-    expect(writes.join('')).toBe('Hello world\n\n\n');
+    expect(writes.join('')).toBe('Hello world\n\n');
     expect(logs.some((line) => line.startsWith('🧿 oracle ('))).toBe(true);
     expect(logs.some((line) => line.startsWith('Finished in '))).toBe(true);
   });
@@ -760,7 +760,7 @@ describe('runOracle streaming output', () => {
       },
     );
 
-    expect(writes.join('')).toBe('visible\n\n\n');
+    expect(writes.join('')).toBe('visible\n\n');
   });
 });
 

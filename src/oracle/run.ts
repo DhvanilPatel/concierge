@@ -370,7 +370,7 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
   if (!options.silent) {
     // biome-ignore lint/nursery/noUnnecessaryConditions: flips true when streaming events arrive
     if (sawTextDelta) {
-      write('\n\n');
+      write('\n');
     } else {
       ensureAnswerHeader();
       log(answerText || chalk.dim('(no text output)'));
