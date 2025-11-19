@@ -441,6 +441,11 @@ function getBrowserConfigFromMetadata(metadata: SessionMetadata): BrowserSession
 }
 
 async function runRootCommand(options: CliOptions): Promise<void> {
+  if (process.env.ORACLE_FORCE_TUI === '1') {
+    await ensureSessionStorage();
+    await launchTui({ version: VERSION });
+    return;
+  }
   const userConfig = (await loadUserConfig()).config;
   const helpRequested = rawCliArgs.some((arg: string) => arg === '--help' || arg === '-h');
   const optionUsesDefault = (name: string): boolean => {

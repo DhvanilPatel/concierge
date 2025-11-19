@@ -216,9 +216,9 @@ function formatSessionLabel(meta: SessionMetadata): string {
   const mode = meta.mode ?? meta.options?.mode ?? 'api';
   const slug = meta.id;
   const chars = meta.options?.prompt?.length ?? meta.promptPreview?.length ?? 0;
-  const charLabel = chars > 0 ? chalk.gray(String(chars).padStart(CHARS_PAD)) : chalk.gray(''.padStart(CHARS_PAD - 1) + '-');
+  const charLabel = chars > 0 ? chalk.gray(String(chars).padStart(CHARS_PAD)) : chalk.gray(`${''.padStart(CHARS_PAD - 1)}-`);
   const cost = mode === 'browser' ? null : resolveCost(meta);
-  const costLabel = cost != null ? chalk.gray(formatCostTable(cost)) : chalk.gray(''.padStart(COST_PAD - 1) + '-');
+  const costLabel = cost != null ? chalk.gray(formatCostTable(cost)) : chalk.gray(`${''.padStart(COST_PAD - 1)}-`);
   return `${status} ${chalk.white(model.padEnd(MODEL_PAD))} ${chalk.gray(mode.padEnd(MODE_PAD))} ${chalk.gray(created.padEnd(
     TIMESTAMP_PAD,
   ))} ${charLabel} ${costLabel}  ${chalk.cyan(
