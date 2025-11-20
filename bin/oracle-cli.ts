@@ -10,7 +10,7 @@ import { shouldRequirePrompt } from '../src/cli/promptRequirement.js';
 import chalk from 'chalk';
 import type { SessionMetadata, SessionMode, BrowserSessionConfig } from '../src/sessionStore.js';
 import { sessionStore, pruneOldSessions } from '../src/sessionStore.js';
-import { DEFAULT_MODEL, MODEL_CONFIGS, runOracle, renderPromptMarkdown, readFiles } from '../src/oracle.js';
+import { DEFAULT_MODEL, MODEL_CONFIGS, runOracle, readFiles, estimateRequestTokens, buildRequestBody } from '../src/oracle.js';
 import type { ModelName, PreviewMode, RunOracleOptions } from '../src/oracle.js';
 import { CHATGPT_URL, normalizeChatgptUrl } from '../src/browserMode.js';
 import { createRemoteBrowserExecutor } from '../src/remote/client.js';
@@ -31,6 +31,8 @@ import {
   parseTimeoutOption,
   mergePathLikeOptions,
 } from '../src/cli/options.js';
+import { copyToClipboard } from '../src/cli/clipboard.js';
+import { buildMarkdownBundle } from '../src/cli/markdownBundle.js';
 import { shouldDetachSession } from '../src/cli/detach.js';
 import { applyHiddenAliases } from '../src/cli/hiddenAliases.js';
 import { buildBrowserConfig, resolveBrowserModelLabel } from '../src/cli/browserConfig.js';
@@ -103,6 +105,8 @@ interface CliOptions extends OptionValues {
   remoteChrome?: string;
   remoteHost?: string;
   remoteToken?: string;
+  copyMarkdown?: boolean;
+  copy?: boolean;
   verbose?: boolean;
   debugHelp?: boolean;
   heartbeat?: number;
@@ -195,6 +199,13 @@ program
       .default([])
       .hideHelp(),
   )
+  .addOption(
+    new Option(
+      '--copy-markdown',
+      'Copy the assembled markdown bundle to the clipboard (also prints when combined with --render-markdown).',
+    ).default(false),
+  )
+  .addOption(new Option('--copy').hideHelp().default(false))
   .option('-s, --slug <words>', 'Custom session slug (3-5 words).')
   .option(
     '-m, --model <model>',
@@ -564,6 +575,7 @@ async function runRootCommand(options: CliOptions): Promise<void> {
   if (mergedFileInputs.length > 0) {
     options.file = mergedFileInputs;
   }
+  const copyMarkdown = options.copyMarkdown || options.copy;
 
   const applyRetentionOption = (): void => {
     if (optionUsesDefault('retainHours') && typeof userConfig.sessionRetentionHours === 'number') {
@@ -733,15 +745,34 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     return;
   }
 
-  if (options.renderMarkdown) {
+  if (options.renderMarkdown || copyMarkdown) {
     if (!options.prompt) {
-      throw new Error('Prompt is required when using --render-markdown.');
+      throw new Error('Prompt is required when using --render-markdown or --copy-markdown.');
     }
-    const markdown = await renderPromptMarkdown(
+    const bundle = await buildMarkdownBundle(
       { prompt: options.prompt, file: options.file, system: options.system },
       { cwd: process.cwd() },
     );
-    console.log(markdown);
+    const modelConfig = MODEL_CONFIGS[resolvedModel];
+    const requestBody = buildRequestBody({
+      modelConfig,
+      systemPrompt: bundle.systemPrompt,
+      userPrompt: bundle.promptWithFiles,
+      searchEnabled: options.search !== false,
+      background: false,
+      storeResponse: false,
+    });
+    const estimatedTokens = estimateRequestTokens(requestBody, modelConfig);
+    if (options.renderMarkdown) {
+      console.log(bundle.markdown);
+    }
+    if (copyMarkdown) {
+      const result = await copyToClipboard(bundle.markdown);
+      const prefix = result.success ? 'Copied markdown to clipboard' : 'Could not copy markdown to clipboard';
+      const via = result.success && result.command ? ` via ${result.command}` : '';
+      const summary = `${prefix}${via} (${bundle.markdown.length.toLocaleString()} chars; ~${estimatedTokens.toLocaleString()} tokens).`;
+      console.log(chalk.dim(summary));
+    }
     return;
   }
 
