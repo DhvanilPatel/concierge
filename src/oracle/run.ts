@@ -281,6 +281,7 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
   let elapsedMs = 0;
   let sawTextDelta = false;
   let answerHeaderPrinted = false;
+  const allowAnswerHeader = options.suppressAnswerHeader !== true;
   const timeoutExceeded = (): boolean => now() - runStart >= timeoutMs;
   const throwIfTimedOut = () => {
     if (timeoutExceeded()) {
@@ -291,11 +292,13 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
     }
   };
   const ensureAnswerHeader = () => {
-    if (!options.silent && !answerHeaderPrinted) {
-      log('');
+    if (options.silent || answerHeaderPrinted) return;
+    // Always add a separating newline for readability; optionally include the label depending on caller needs.
+    log('');
+    if (allowAnswerHeader) {
       log(chalk.bold('Answer:'));
-      answerHeaderPrinted = true;
     }
+    answerHeaderPrinted = true;
   };
 
   try {

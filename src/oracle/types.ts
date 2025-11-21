@@ -126,6 +126,8 @@ export interface RunOracleOptions {
   renderPlain?: boolean;
   /** Suppress the per-run header log line (used for multi-model logs where a model header is already printed). */
   suppressHeader?: boolean;
+  /** Hide the default “Answer:” label, but keep the leading newline for readability. */
+  suppressAnswerHeader?: boolean;
 }
 
 export interface UsageSummary {

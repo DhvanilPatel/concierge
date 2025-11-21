@@ -122,7 +122,12 @@ function startModelExecution({
       startedAt: new Date().toISOString(),
     });
     const result = await runOracleImpl(
-      { ...perModelOptions, effectiveModelId: model, suppressHeader: true },
+      {
+        ...perModelOptions,
+        effectiveModelId: model,
+        // Keep the "Calling <model>" header in the log but drop the extra "Answer:" label when replaying multi-model runs.
+        suppressAnswerHeader: true,
+      },
       {
         cwd,
         log: perModelLog,

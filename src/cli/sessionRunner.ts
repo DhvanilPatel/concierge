@@ -123,12 +123,14 @@ export async function performSessionRun({
       });
       // Render stored per-model logs with ANSI markdown when in a TTY, unless caller explicitly requested plain output.
       const shouldRenderMarkdown = process.stdout.isTTY && runOptions.renderPlain !== true;
-      for (const result of summary.fulfilled) {
-        log('');
-        log(kleur.bold(`[${result.model}]`));
+      for (const [index, result] of summary.fulfilled.entries()) {
         const body = await sessionStore.readModelLog(sessionMeta.id, result.model);
+        // Separate consecutive model outputs without injecting another per-model header.
+        if (index > 0) {
+          log('');
+        }
         if (body.length === 0) {
-          log(dim('(no output recorded)'));
+          log(dim(`${result.model}: (no output recorded)`));
           continue;
         }
         const printable = shouldRenderMarkdown ? renderMarkdownAnsi(body) : body;
