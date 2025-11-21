@@ -87,7 +87,8 @@
   },
   "pnpm": {
     "overrides": {
-      "zod": "3.24.1"
+      "zod": "3.24.1",
+      "win-dpapi": "npm:@primno/dpapi@2.0.1"
     },
     "onlyBuiltDependencies": [
       "keytar",

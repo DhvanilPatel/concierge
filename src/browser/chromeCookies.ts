@@ -30,6 +30,7 @@ export async function loadChromeCookies({
   const urlsToCheck = Array.from(new Set([stripQuery(targetUrl), ...COOKIE_URLS]));
   const merged = new Map<string, CookieParam>();
   const cookieFile = await resolveCookieFilePath({ explicitPath: explicitCookiePath, profile });
+  const cookiesPath = await materializeCookieFile(cookieFile);
 
   await ensureMacKeychainReadable();
 
@@ -37,9 +38,9 @@ export async function loadChromeCookies({
     let raw: unknown;
     try {
       raw = await settleWithTimeout(
-        chromeCookies.getCookiesPromised(url, 'puppeteer', cookieFile),
+        chromeCookies.getCookiesPromised(url, 'puppeteer', cookiesPath),
         COOKIE_READ_TIMEOUT_MS,
-        `Timed out reading Chrome cookies from ${cookieFile} (after ${COOKIE_READ_TIMEOUT_MS} ms)`,
+        `Timed out reading Chrome cookies from ${cookiesPath} (after ${COOKIE_READ_TIMEOUT_MS} ms)`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -216,6 +217,22 @@ function expandPath(input: string): string {
 
 function looksLikePath(value: string): boolean {
   return value.includes('/') || value.includes('\\');
+}
+
+async function materializeCookieFile(sourcePath: string): Promise<string> {
+  if (process.platform !== 'win32') return sourcePath;
+  // Chrome can keep the Cookies DB locked; copy to a temp file so sqlite can open it reliably.
+  const tempPath = path.join(
+    os.tmpdir(),
+    `oracle-cookies-${Date.now().toString(36)}-${Math.random().toString(16).slice(2)}.sqlite`,
+  );
+  try {
+    await fs.copyFile(sourcePath, tempPath);
+    return tempPath;
+  } catch (error) {
+    // Fall back to the original path if the copy fails; upstream error handling will surface issues.
+    return sourcePath;
+  }
 }
 
 async function defaultProfileRoot(): Promise<string> {

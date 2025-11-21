@@ -74,11 +74,6 @@ export async function performSessionRun({
       if (runOptions.model.startsWith('gemini')) {
         throw new Error('Gemini models are not available in browser mode. Re-run with --engine api.');
       }
-      if (!browserDeps?.executeBrowser && process.platform !== 'darwin') {
-        throw new Error(
-          'Browser engine is only supported on macOS today. Use --engine api instead, or run on macOS.',
-        );
-      }
       if (!browserConfig) {
         throw new Error('Missing browser configuration for session.');
       }
