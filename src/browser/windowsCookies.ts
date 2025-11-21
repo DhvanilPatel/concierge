@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { existsSync, promises as fsp, readFileSync } from 'node:fs';
+import { existsSync, promises as fsp } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sqlite3 from 'sqlite3';

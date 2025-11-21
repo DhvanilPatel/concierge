@@ -285,6 +285,7 @@ export async function runOracle(options: RunOracleOptions, deps: RunOracleDeps =
   let response: OracleResponse | null = null;
   let elapsedMs = 0;
   let sawTextDelta = false;
+  // Buffer streamed text so we can re-render markdown once the stream ends (TTY only).
   const streamedChunks: string[] = [];
   let answerHeaderPrinted = false;
   const allowAnswerHeader = options.suppressAnswerHeader !== true;
