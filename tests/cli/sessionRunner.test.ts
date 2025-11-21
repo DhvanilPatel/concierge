@@ -311,7 +311,8 @@ describe('performSessionRun', () => {
     const combined =
       writeSpy.mock.calls.map((c) => c[0]).join('') + logSpy.mock.calls.map((c) => c[0]).join('');
     expect(combined).toContain('Please provide design');
-    expect(combined).not.toContain(']9;4;');
+    // OSC progress codes should be preserved when replaying logs so terminals can render them.
+    expect(combined).toContain('\u001b]9;4;');
 
     writeSpy.mockRestore();
     logSpy.mockRestore();

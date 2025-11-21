@@ -180,6 +180,10 @@ export async function performSessionRun({
       const printedModels = new Set<string>();
       const answerFallbacks = new Map<string, string>();
       const stripOscProgress = (text: string): string => {
+        if (shouldStreamInline) {
+          // On a real TTY we want the OSC progress hints to show up.
+          return text;
+        }
         const oscStart = '\u001b]9;4;';
         const oscEnd = '\u001b\\';
         let current = text;
