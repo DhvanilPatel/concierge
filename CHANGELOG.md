@@ -34,8 +34,9 @@ All notable changes to this project will be documented in this file.
 - Browser cookie sync on Windows now copies the profile DB into a named temp directory with the expected `Cookies` filename so `chrome-cookies-secure` can read it reliably during browser fallbacks.
 - Streaming runs in `--render-plain` mode now send chunks directly to stdout and keep the log sink newline-aligned, preventing missing or double-printed output in TTY and background runs.
 - CLI output is consistent again: final answers always print to stdout (even when a log sink is active) and inline runs once more echo the assistant text to stdout.
+- MCP: stdout is now muted during MCP runs, preventing non-JSON logs from breaking hosts like Cursor.
 
-## 1.3.0 — 2025-11-19
+## 0.3.0 — 2025-11-19
 
 ### Added
 - Native Azure OpenAI support! Set `AZURE_OPENAI_ENDPOINT` (plus `AZURE_OPENAI_API_KEY` and optionally `AZURE_OPENAI_DEPLOYMENT`/`AZURE_OPENAI_API_VERSION`) or use the new CLI flags (`--azure-endpoint`, `--azure-deployment`, etc.) to switch automatically to the Azure client.
@@ -55,7 +56,7 @@ All notable changes to this project will be documented in this file.
 - CLI output is tidier and more resilient: graceful Ctrl+C, shorter headers/footers, clearer verbose token labels, and reduced trailing spacing.
 - File discovery is more reliable on Windows thanks to normalized paths, native-fs glob handling, and `.gitignore` respect across platforms.
 
-## 1.2.0 — 2025-11-18
+## 0.2.0 — 2025-11-18
 
 ### Added
 - `oracle-mcp` stdio server (bin) with `consult` and `sessions` tools plus read-only session resources at `oracle-session://{id}/{metadata|log|request}`.
@@ -103,14 +104,14 @@ All notable changes to this project will be documented in this file.
   ```
 - The MCP `consult` tool honors `~/.oracle/config.json` defaults (engine/model/search/prompt suffix/heartbeat/background/filesReport) unless the caller overrides them.
 
-## 1.1.1 — 2025-11-20
+## 0.1.1 — 2025-11-20
 
 ### Added
 - Hidden `--files`, `--path`, and `--paths` aliases for `--file`, so all path inputs (including `--include`) merge cleanly; commas still split within a single flag.
 - CLI path-merging helper now has unit coverage for alias ordering and comma splitting.
 - New `--copy-markdown` flag (alias `--copy`) assembles the markdown bundle and copies it to the clipboard, printing a one-line summary; combine with `--render-markdown` to both print and copy. Clipboard handling now uses `clipboardy` for macOS/Windows/Linux/Wayland/Termux/WSL with graceful failure messaging.
 
-## 1.1.0 — 2025-11-17
+## 0.1.0 — 2025-11-17
 
 Highlights
 - Markdown rendering for completed sessions (`oracle session|status <id> --render` / `--render-markdown`) with ANSI formatting in rich TTYs; falls back to raw when logs are huge or stdout isn’t a TTY.
@@ -123,12 +124,12 @@ Details
 
 ### Improved
 - `oracle session|status <id> --render` (alias `--render-markdown`) pretty-prints completed session markdown to ANSI in rich TTYs, falls back to raw when non-TTY or oversized logs.
-## 1.0.10 — 2025-11-17
+## 0.0.10 — 2025-11-17
 
 ### Added
 - Rich terminals that support OSC 9;4 (Ghostty 1.2+, WezTerm, Windows Terminal) now show an inline progress bar while Oracle waits for the OpenAI response; disable with `ORACLE_NO_OSC_PROGRESS=1`, force with `ORACLE_FORCE_OSC_PROGRESS=1`.
 
-## 1.0.9 — 2025-11-16
+## 0.0.9 — 2025-11-16
 
 ### Added
 - `oracle session|status <id> --render` (alias `--render-markdown`) pretty-prints completed session markdown to ANSI in rich TTYs, falls back to raw when non-TTY or oversized logs.
