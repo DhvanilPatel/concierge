@@ -5,7 +5,6 @@ import { existsSync } from 'node:fs';
 import chromeCookies from 'chrome-cookies-secure';
 import { COOKIE_URLS } from './constants.js';
 import type { CookieParam } from './types.js';
-import './keytarShim.js';
 import { ensureCookiesDirForFallback } from './windowsCookies.js';
 
 type KeychainLabel = { service: string; account: string };
@@ -75,13 +74,21 @@ export async function loadChromeCookies({
 }
 
 async function ensureMacKeychainReadable(): Promise<void> {
-  if (process.platform !== 'darwin') {
+  if (process.platform === 'win32') {
     return;
   }
-  // chrome-cookies-secure can hang forever when macOS Keychain rejects access (e.g., SSH/no GUI).
-  // Probe the keychain ourselves with a timeout so callers fail fast instead of blocking the run.
-  const keytarModule = await import('keytar');
-  const keytar = (keytarModule.default ?? keytarModule) as KeytarLike;
+  // chrome-cookies-secure can hang forever when the platform keyring rejects access (e.g., SSH/no GUI).
+  // Probe the keyring ourselves with a timeout so callers fail fast instead of blocking the run.
+  let keytar: KeytarLike | null = null;
+  try {
+    const keytarModule = await import('keytar');
+    keytar = (keytarModule.default ?? keytarModule) as KeytarLike;
+  } catch (error) {
+    const base = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Failed to load keytar for secure cookie copy (${base}). Install keyring deps (macOS Keychain / libsecret) or rerun with --render --copy to paste into ChatGPT manually.`,
+    );
+  }
   const password = await settleWithTimeout(
     findKeychainPassword(keytar, MAC_KEYCHAIN_LABELS),
     KEYCHAIN_PROBE_TIMEOUT_MS,
