@@ -18,6 +18,8 @@ export interface RemoteServerOptions {
   port?: number;
   token?: string;
   logger?: (message: string) => void;
+  manualLoginDefault?: boolean;
+  manualLoginProfileDir?: string;
 }
 
 interface RemoteServerDeps {
@@ -138,6 +140,20 @@ export async function createRemoteServer(
         payload.browserConfig.inlineCookies = null;
         payload.browserConfig.inlineCookiesSource = null;
         payload.browserConfig.cookieSync = true;
+      } else {
+        payload.browserConfig = {} as typeof payload.browserConfig;
+      }
+
+      // Enforce manual-login profile when cookie sync is unavailable (e.g., Windows/WSL).
+      if (options.manualLoginDefault) {
+        payload.browserConfig.manualLogin = true;
+        payload.browserConfig.manualLoginProfileDir = options.manualLoginProfileDir;
+        payload.browserConfig.keepBrowser = true;
+        if (verbose) {
+          logger(
+            `[serve] Enforcing manual-login profile at ${options.manualLoginProfileDir ?? 'default'} for remote run ${runId}`,
+          );
+        }
       }
 
       const result = await runBrowser({
@@ -193,21 +209,42 @@ export async function createRemoteServer(
 }
 
 export async function serveRemote(options: RemoteServerOptions = {}): Promise<void> {
-  // Warm-up: ensure this host has a ChatGPT login before accepting runs.
-  const { cookies, opened } = await loadLocalChatgptCookies(console.log, CHATGPT_URL);
+  const manualProfileDir = options.manualLoginProfileDir ?? path.join(os.homedir(), '.oracle', 'browser-profile');
+  const preferManualLogin = options.manualLoginDefault || process.platform === 'win32' || isWsl();
+  let cookies: CookieParam[] | null = null;
+  let opened = false;
+
+  if (!preferManualLogin) {
+    // Warm-up: ensure this host has a ChatGPT login before accepting runs.
+    const result = await loadLocalChatgptCookies(console.log, CHATGPT_URL);
+    cookies = result.cookies;
+    opened = result.opened;
+  }
+
   if (!cookies || cookies.length === 0) {
     console.log('No ChatGPT cookies detected on this host.');
-    if (opened) {
+    if (preferManualLogin) {
+      await mkdir(manualProfileDir, { recursive: true });
+      console.log(
+        `Cookie extraction is unavailable on this platform. Using manual-login Chrome profile at ${manualProfileDir}. Remote runs will reuse this profile; sign in once when the browser opens.`,
+      );
+    } else if (opened) {
       console.log('Opened chatgpt.com for login. Sign in, then restart `oracle serve` to continue.');
+      return;
     } else {
       console.log('Please open https://chatgpt.com/ in this host\'s browser and sign in; then rerun.');
       console.log('Tip: install xdg-utils (xdg-open) to enable automatic browser opening on Linux/WSL.');
+      return;
     }
-    return;
+  } else {
+    console.log(`Detected ${cookies.length} ChatGPT cookies on this host; runs will reuse this session.`);
   }
-  console.log(`Detected ${cookies.length} ChatGPT cookies on this host; runs will reuse this session.`);
 
-  const server = await createRemoteServer(options);
+  const server = await createRemoteServer({
+    ...options,
+    manualLoginDefault: preferManualLogin,
+    manualLoginProfileDir: manualProfileDir,
+  });
   await new Promise<void>((resolve) => {
     const shutdown = () => {
       console.log('Shutting down remote service...');
