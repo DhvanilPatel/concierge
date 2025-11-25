@@ -72,7 +72,7 @@ function extractSessionId(output: McporterOutput): string | null {
         'call',
         'oracle-local.consult',
         'prompt:mcporter session smoke',
-        'model:gpt-5.1',
+        'model:gpt-4.1',
         'engine:api',
         `slug:${slug}`,
         '--config',

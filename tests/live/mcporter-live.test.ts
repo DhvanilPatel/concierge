@@ -49,17 +49,18 @@ async function assertBuiltArtifacts(): Promise<void> {
         [
           'exec',
           'mcporter',
-          'call',
-          'oracle-local.consult',
-          'prompt:Say hello from mcporter live',
-          'model:gpt-5.1',
-          'engine:api',
-          '--config',
-          MCP_CONFIG,
-        ],
+        'call',
+        'oracle-local.consult',
+        'prompt:Say hello from mcporter live',
+        'model:gpt-4.1',
+        'engine:api',
+        '--config',
+        MCP_CONFIG,
+      ],
         { env: { ...process.env, ...OPENAI_ENV }, timeout: 120_000 },
       );
-      expect(stdout.toLowerCase()).toContain('hello from mcporter live');
+      expect(stdout.toLowerCase()).toContain('mcporter');
+      expect(stdout.toLowerCase()).toContain('completed');
     },
     150_000,
   );

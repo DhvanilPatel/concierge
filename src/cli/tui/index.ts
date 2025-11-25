@@ -13,6 +13,7 @@ import { MAX_RENDER_BYTES, trimBeforeFirstAnswer } from '../sessionDisplay.js';
 import { buildBrowserConfig, resolveBrowserModelLabel } from '../browserConfig.js';
 import { resolveNotificationSettings } from '../notifier.js';
 import { loadUserConfig, type UserConfig } from '../../config.js';
+import { formatTokenCount } from '../../oracle/runUtils.js';
 
 const isTty = (): boolean => Boolean(process.stdout.isTTY && chalk.level > 0);
 const dim = (text: string): string => (isTty() ? kleur.dim(text) : text);
@@ -346,7 +347,7 @@ function printModelSummaries(models: SessionModelRun[]): void {
   console.log(chalk.bold('Models:'));
   for (const run of models) {
     const usage = run.usage
-      ? ` tok=${run.usage.outputTokens?.toLocaleString() ?? 0}/${run.usage.totalTokens?.toLocaleString() ?? 0}`
+      ? ` tok=${formatTokenCount(run.usage.outputTokens ?? 0)}/${formatTokenCount(run.usage.totalTokens ?? 0)}`
       : '';
     console.log(` - ${chalk.cyan(run.model)} — ${run.status}${usage}`);
   }

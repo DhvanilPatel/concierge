@@ -45,7 +45,7 @@ if (!ENABLE_LIVE) {
         const outputPath = path.join(tmpHome, 'write-output-live.md');
         const runOptions: RunOracleOptions = {
           prompt: 'Reply with "write-output e2e" on a single line.',
-          model: 'gpt-5.1',
+          model: 'gpt-4.1',
           writeOutputPath: outputPath,
           silent: true,
           heartbeatIntervalMs: 0,
