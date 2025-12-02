@@ -237,14 +237,14 @@ async function fileExists(candidate: string): Promise<boolean> {
   }
 }
 
-export function expandPath(input: string): string {
+function expandPath(input: string): string {
   if (input.startsWith('~/')) {
     return path.join(os.homedir(), input.slice(2));
   }
   return path.isAbsolute(input) ? input : path.resolve(process.cwd(), input);
 }
 
-export function looksLikePath(value: string): boolean {
+function looksLikePath(value: string): boolean {
   return value.includes('/') || value.includes('\\');
 }
 
@@ -262,7 +262,7 @@ async function materializeCookieFile(sourcePath: string): Promise<string> {
   }
 }
 
-export async function defaultProfileRoot(): Promise<string> {
+async function defaultProfileRoot(): Promise<string> {
   const candidates: string[] = [];
   if (process.platform === 'darwin') {
     candidates.push(

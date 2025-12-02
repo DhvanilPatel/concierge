@@ -83,7 +83,7 @@ describe('runDryRunSummary', () => {
 
     const joined = log.mock.calls.flat().join('\n');
     expect(joined).toContain('Inline file content');
-    expect(joined).toContain('Profile sync: disabled');
+    expect(joined).toContain('cookie-sync');
   });
 
   test('browser dry run shows default cookie copy when none provided and no files attached', async () => {
@@ -111,7 +111,7 @@ describe('runDryRunSummary', () => {
     );
 
     const joined = log.mock.calls.flat().join('\n');
-    expect(joined).toContain('Profile sync: copy Chrome profile (Default)');
+    expect(joined).toContain('Cookies: copy from Chrome (all from Chrome profile)');
     expect(joined).toContain('No files attached');
   });
 

@@ -6,14 +6,10 @@ describe('resolveBrowserConfig', () => {
   test('returns defaults when config missing', () => {
     const resolved = resolveBrowserConfig(undefined);
     expect(resolved.url).toBe(CHATGPT_URL);
-    expect(resolved.cookieSync).toBe(true);
+    const isWindows = process.platform === 'win32';
+    expect(resolved.cookieSync).toBe(!isWindows);
     expect(resolved.headless).toBe(false);
-    expect(resolved.manualLogin).toBe(false);
-  });
-
-  test('fresh profile flag disables profile sync', () => {
-    const resolved = resolveBrowserConfig({ cookieSync: false });
-    expect(resolved.cookieSync).toBe(false);
+    expect(resolved.manualLogin).toBe(isWindows);
   });
 
   test('applies overrides', () => {
