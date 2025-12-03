@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
-## 0.5.1 — Unreleased
+## 0.5.1 — 2025-12-03
+
+### Added
+- Browser runs now auto-click the ChatGPT “Answer now” gate after sending, so workspace prompts continue without manual intervention.
 
 ### Changed
-- `oracle status` now uses the same session table formatting as the TUI (status/model/mode/timestamp/chars/cost/slug), keeping colors/alignment consistent across both views.
-- Browser mode now fails fast when cookie sync applies zero cookies (e.g., keytar not built on Node 25); the error includes the Chrome profile and a keytar rebuild hint so runs don’t hang “running” on a login page.
+- `oracle status` uses the same session table formatting as the TUI (status/model/mode/timestamp/chars/cost/slug) for consistent layout.
+- Browser mode inserts a 500 ms settle before submitting prompts and after clicking gates to avoid subscription/widget races.
+- OpenRouter paths route through the chat/completions API (Responses API avoided); live smokes use `z-ai/glm-4.6`, and the mixed run covers Grok fast path without skips.
+- Docs/guardrails: AGENTS explains sqlite/keytar rebuilds for Node 25 browser runs; changelog notes the browser cookie-sync guard.
+
+### Fixed
+- Browser mode fails fast when cookie sync copies zero cookies (e.g., keytar not built); the error names the Chrome profile and rebuild command instead of silently hanging.
 
 ## 0.5.0 — 2025-11-25
 
