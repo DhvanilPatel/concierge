@@ -9,6 +9,7 @@ import {
 } from '../constants.js';
 import { delay } from '../utils.js';
 import { logDomFailure, logConversationSnapshot, buildConversationDebugExpression } from '../domDebug.js';
+import { buildClickDispatcher } from './domEvents.js';
 
 const ASSISTANT_POLL_TIMEOUT_ERROR = 'assistant-response-watchdog-timeout';
 
@@ -313,6 +314,7 @@ function buildAssistantSnapshotExpression(): string {
 function buildResponseObserverExpression(timeoutMs: number): string {
   const selectorsLiteral = JSON.stringify(ANSWER_SELECTORS);
   return `(() => {
+    ${buildClickDispatcher()}
     const SELECTORS = ${selectorsLiteral};
     const STOP_SELECTOR = '${STOP_BUTTON_SELECTOR}';
     const FINISHED_SELECTOR = '${FINISHED_ACTIONS_SELECTOR}';
@@ -349,7 +351,7 @@ function buildResponseObserverExpression(timeoutMs: number): string {
           if (ariaLabel.toLowerCase().includes('stop')) {
             return;
           }
-          stop.click();
+          dispatchClickSequence(stop);
         }, 500);
         setTimeout(() => {
           if (stopInterval) {
@@ -397,6 +399,7 @@ function buildAssistantExtractor(functionName: string): string {
   const conversationLiteral = JSON.stringify(CONVERSATION_TURN_SELECTOR);
   const assistantLiteral = JSON.stringify(ASSISTANT_ROLE_SELECTOR);
   return `const ${functionName} = () => {
+    ${buildClickDispatcher()}
     const CONVERSATION_SELECTOR = ${conversationLiteral};
     const ASSISTANT_SELECTOR = ${assistantLiteral};
     const isAssistantTurn = (node) => {
@@ -424,7 +427,7 @@ function buildAssistantExtractor(functionName: string): string {
           testid.includes('markdown') ||
           testid.includes('toggle')
         ) {
-          button.click();
+          dispatchClickSequence(button);
         }
       }
     };
@@ -455,6 +458,7 @@ function buildAssistantExtractor(functionName: string): string {
 
 function buildCopyExpression(meta: { messageId?: string | null; turnId?: string | null }): string {
   return `(() => {
+    ${buildClickDispatcher()}
     const BUTTON_SELECTOR = '${COPY_BUTTON_SELECTOR}';
     const TIMEOUT_MS = 5000;
 
@@ -556,7 +560,7 @@ function buildCopyExpression(meta: { messageId?: string | null; turnId?: string 
 
       button.addEventListener('copy', handleCopy, true);
       button.scrollIntoView({ block: 'center', behavior: 'instant' });
-      button.click();
+      dispatchClickSequence(button);
       pollId = setInterval(() => {
         const payload = readIntercepted();
         if (payload.success) {

@@ -8,6 +8,7 @@ import {
 } from '../constants.js';
 import { delay } from '../utils.js';
 import { logDomFailure } from '../domDebug.js';
+import { buildClickDispatcher } from './domEvents.js';
 
 const ENTER_KEY_EVENT = {
   key: 'Enter',
@@ -26,20 +27,13 @@ export async function submitPrompt(
   const encodedPrompt = JSON.stringify(prompt);
   const focusResult = await runtime.evaluate({
     expression: `(() => {
+      ${buildClickDispatcher()}
       const SELECTORS = ${JSON.stringify(INPUT_SELECTORS)};
-      const dispatchPointer = (target) => {
-        if (!(target instanceof HTMLElement)) {
-          return;
-        }
-        for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
-          target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
-        }
-      };
       const focusNode = (node) => {
         if (!node) {
           return false;
         }
-        dispatchPointer(node);
+        dispatchClickSequence(node);
         if (typeof node.focus === 'function') {
           node.focus();
         }
@@ -137,6 +131,7 @@ export async function submitPrompt(
 
 async function attemptSendButton(Runtime: ChromeClient['Runtime']): Promise<boolean> {
   const script = `(() => {
+    ${buildClickDispatcher()}
     const selectors = ${JSON.stringify(SEND_BUTTON_SELECTORS)};
     let button = null;
     for (const selector of selectors) {
@@ -154,12 +149,7 @@ async function attemptSendButton(Runtime: ChromeClient['Runtime']): Promise<bool
       style.pointerEvents === 'none' ||
       style.display === 'none';
     if (disabled) return 'disabled';
-    // Use full mouse event sequence for React compatibility
-    (button).dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true }));
-    (button).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    (button).dispatchEvent(new MouseEvent('pointerup', { bubbles: true, cancelable: true }));
-    (button).dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-    (button).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    dispatchClickSequence(button);
     return 'clicked';
   })()`;
 
@@ -179,6 +169,7 @@ async function attemptSendButton(Runtime: ChromeClient['Runtime']): Promise<bool
 
 async function clickAnswerNowIfPresent(Runtime: ChromeClient['Runtime'], logger?: BrowserLogger) {
   const script = `(() => {
+    ${buildClickDispatcher()}
     const matchesText = (el) => (el?.textContent || '').trim().toLowerCase() === 'answer now';
     const candidate = Array.from(document.querySelectorAll('button,span')).find(matchesText);
     if (!candidate) return 'missing';
@@ -190,11 +181,7 @@ async function clickAnswerNowIfPresent(Runtime: ChromeClient['Runtime'], logger?
       style.pointerEvents === 'none' ||
       style.display === 'none';
     if (disabled) return 'disabled';
-    (button).dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true }));
-    (button).dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    (button).dispatchEvent(new MouseEvent('pointerup', { bubbles: true, cancelable: true }));
-    (button).dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-    (button).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    dispatchClickSequence(button);
     return 'clicked';
   })()`;
 

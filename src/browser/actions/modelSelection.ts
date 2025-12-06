@@ -5,6 +5,7 @@ import {
   MODEL_BUTTON_SELECTOR,
 } from '../constants.js';
 import { logDomFailure } from '../domDebug.js';
+import { buildClickDispatcher } from './domEvents.js';
 
 export async function ensureModelSelection(
   Runtime: ChromeClient['Runtime'],
@@ -56,6 +57,7 @@ function buildModelSelectionExpression(targetModel: string): string {
   const menuContainerLiteral = JSON.stringify(MENU_CONTAINER_SELECTOR);
   const menuItemLiteral = JSON.stringify(MENU_ITEM_SELECTOR);
   return `(() => {
+    ${buildClickDispatcher()}
     // Capture the selectors and matcher literals up front so the browser expression stays pure.
     const BUTTON_SELECTOR = '${MODEL_BUTTON_SELECTOR}';
     const LABEL_TOKENS = ${labelLiteral};
@@ -88,14 +90,9 @@ function buildModelSelectionExpression(targetModel: string): string {
 
     let lastPointerClick = 0;
     const pointerClick = () => {
-      // Some menus ignore synthetic click events.
-      const down = new PointerEvent('pointerdown', { bubbles: true, pointerId: 1, pointerType: 'mouse' });
-      const up = new PointerEvent('pointerup', { bubbles: true, pointerId: 1, pointerType: 'mouse' });
-      const click = new MouseEvent('click', { bubbles: true });
-      button.dispatchEvent(down);
-      button.dispatchEvent(up);
-      button.dispatchEvent(click);
-      lastPointerClick = performance.now();
+      if (dispatchClickSequence(button)) {
+        lastPointerClick = performance.now();
+      }
     };
 
     const getOptionLabel = (node) => node?.textContent?.trim() ?? '';
@@ -207,7 +204,7 @@ function buildModelSelectionExpression(targetModel: string): string {
             resolve({ status: 'already-selected', label: match.label });
             return;
           }
-          match.node.click();
+          dispatchClickSequence(match.node);
           resolve({ status: 'switched', label: match.label });
           return;
         }
