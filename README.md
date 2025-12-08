@@ -17,6 +17,8 @@ Oracle bundles your prompt and files so another AI can answer with real context.
 
 Install globally: `npm install -g @steipete/oracle`
 
+Use `npx -y @steipete/oracle …` (not `pnpx`)—pnpx's sandboxed cache can’t load the sqlite bindings and will throw missing `node_sqlite3.node` errors.
+
 ```bash
 # Copy the bundle and paste into ChatGPT
 npx @steipete/oracle --render --copy -p "Review the TS data layer for schema drift" --file "src/**/*.ts,*/*.test.ts"
