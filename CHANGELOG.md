@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.5 — 2025-12-09
+## 0.5.6 — 2025-12-09 (re-release of 0.5.5)
 
 ### Changed
 - Browser uploads: after `setFileInputFiles` we now log the chips + file-input contents and only mark success when the real file input contains the uploaded filename; the generic “Files” pill is no longer treated as proof of attachment.
