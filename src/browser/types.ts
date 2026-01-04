@@ -1,7 +1,7 @@
 import type CDP from 'chrome-remote-interface';
 import type Protocol from 'devtools-protocol';
 import type { BrowserRuntimeMetadata } from '../sessionStore.js';
-import type { ThinkingTimeLevel } from '../oracle/types.js';
+import type { ThinkingTimeLevel } from '../concierge/types.js';
 
 export type ChromeClient = Awaited<ReturnType<typeof CDP>>;
 export type CookieParam = Protocol.Network.CookieParam;

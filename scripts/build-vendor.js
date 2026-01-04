@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 async function main() {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-  const source = path.join(root, 'vendor', 'oracle-notifier');
+  const source = path.join(root, 'vendor', 'concierge-notifier');
   const targetDir = path.join(root, 'dist', 'vendor');
-  const target = path.join(targetDir, 'oracle-notifier');
+  const target = path.join(targetDir, 'concierge-notifier');
 
   try {
     await stat(source);

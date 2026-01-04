@@ -3,20 +3,20 @@ import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { finished } from 'node:stream/promises';
-import { setOracleHomeDirOverrideForTest } from '../src/oracleHome.js';
+import { setConciergeHomeDirOverrideForTest } from '../src/conciergeHome.js';
 import { sessionStore as store } from '../src/sessionStore.js';
 
 describe('sessionStore', () => {
   let tmpHome: string;
 
   beforeEach(async () => {
-    tmpHome = await mkdtemp(path.join(os.tmpdir(), 'oracle-store-'));
-    setOracleHomeDirOverrideForTest(tmpHome);
+    tmpHome = await mkdtemp(path.join(os.tmpdir(), 'concierge-store-'));
+    setConciergeHomeDirOverrideForTest(tmpHome);
     await store.ensureStorage();
   });
 
   afterEach(async () => {
-    setOracleHomeDirOverrideForTest(null);
+    setConciergeHomeDirOverrideForTest(null);
     await rm(tmpHome, { recursive: true, force: true });
   });
 

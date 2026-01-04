@@ -1,5 +1,5 @@
 import type { ChromeClient, BrowserLogger } from '../types.js';
-import type { ThinkingTimeLevel } from '../../oracle/types.js';
+import type { ThinkingTimeLevel } from '../../concierge/types.js';
 import { MENU_CONTAINER_SELECTOR, MENU_ITEM_SELECTOR } from '../constants.js';
 import { logDomFailure } from '../domDebug.js';
 import { buildClickDispatcher } from './domEvents.js';

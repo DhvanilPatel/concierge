@@ -2,12 +2,12 @@
 
 ## Completed
 
-- [x] Fork Oracle → Concierge
+- [x] Fork upstream → Concierge
 - [x] Rename package to `concierge-ai` v0.9.0
 - [x] Update bin: `concierge` (removed `concierge-mcp`)
 - [x] Update CLI branding and help text
 - [x] Home dir: `~/.concierge` (env: `CONCIERGE_HOME_DIR`)
-- [x] Update all user-facing strings (Oracle → Concierge)
+- [x] Update all user-facing strings to Concierge
 - [x] Remove MCP server (~570 LOC removed)
 - [x] Create Concierge skill at `/Users/chip/clawd/skills/concierge/`
 - [x] Remove API client code + dependencies (browser-only build)
@@ -119,6 +119,6 @@ From session analysis on 2026-01-04:
 - 20 "what-is-2-2-reply-*" test sessions in 44 minutes (Clawdis retry loop)
 
 **Key code locations:**
-- `/opt/homebrew/lib/node_modules/@steipete/oracle/dist/src/browser/chromeLifecycle.js` (lines 37-96)
-- `/opt/homebrew/lib/node_modules/@steipete/oracle/dist/src/browser/index.js` (lines 641-682)
-- `/opt/homebrew/lib/node_modules/@steipete/oracle/dist/src/cli/sessionRunner.js` (lines 319-339)
+- `/opt/homebrew/lib/node_modules/concierge-ai/dist/src/browser/chromeLifecycle.js` (lines 37-96)
+- `/opt/homebrew/lib/node_modules/concierge-ai/dist/src/browser/index.js` (lines 641-682)
+- `/opt/homebrew/lib/node_modules/concierge-ai/dist/src/cli/sessionRunner.js` (lines 319-339)

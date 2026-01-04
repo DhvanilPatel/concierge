@@ -148,7 +148,7 @@ export async function shouldCleanupManualLoginProfileState(
 export async function cleanupStaleProfileState(
   userDataDir: string,
   logger?: ProfileStateLogger,
-  options: { lockRemovalMode?: 'never' | 'if_oracle_pid_dead' } = {},
+  options: { lockRemovalMode?: 'never' | 'if_concierge_pid_dead' } = {},
 ): Promise<void> {
   for (const candidate of getDevToolsActivePortPaths(userDataDir)) {
     try {

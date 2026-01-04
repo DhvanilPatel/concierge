@@ -1,7 +1,7 @@
 import CDP from 'chrome-remote-interface';
 import os from 'node:os';
 import path from 'node:path';
-import { getOracleHomeDir } from '../oracleHome.js';
+import { getConciergeHomeDir } from '../conciergeHome.js';
 import { mkdtemp, mkdir, rm } from 'node:fs/promises';
 import type { BrowserRuntimeMetadata, BrowserSessionConfig } from '../sessionStore.js';
 import {
@@ -161,7 +161,7 @@ async function resumeBrowserSessionViaNewChrome(
   const resolved = resolveBrowserConfig(config ?? {});
   const manualLogin = Boolean(resolved.manualLogin);
   const userDataDir = manualLogin
-    ? resolved.manualLoginProfileDir ?? path.join(getOracleHomeDir(), 'browser-profile')
+    ? resolved.manualLoginProfileDir ?? path.join(getConciergeHomeDir(), 'browser-profile')
     : await mkdtemp(path.join(os.tmpdir(), 'concierge-reattach-'));
   if (manualLogin) {
     await mkdir(userDataDir, { recursive: true });

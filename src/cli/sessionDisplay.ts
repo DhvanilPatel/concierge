@@ -7,9 +7,9 @@ import type {
   SessionResponseMetadata,
 } from '../sessionStore.js';
 import { renderMarkdownAnsi } from './markdownRenderer.js';
-import { formatFinishLine } from '../oracle/finishLine.js';
+import { formatFinishLine } from '../concierge/finishLine.js';
 import { sessionStore, wait } from '../sessionStore.js';
-import { formatTokenCount, formatTokenValue } from '../oracle/runUtils.js';
+import { formatTokenCount, formatTokenValue } from '../concierge/runUtils.js';
 import type { BrowserLogger } from '../browser/types.js';
 import { resumeBrowserSession } from '../browser/reattach.js';
 import { estimateTokenCount } from '../browser/utils.js';
@@ -131,7 +131,7 @@ export async function attachSession(sessionId: string, options?: AttachSessionOp
   }
   const initialStatus = metadata.status;
   const wantsRender = Boolean(options?.renderMarkdown);
-  const isVerbose = Boolean(process.env.ORACLE_VERBOSE_RENDER);
+  const isVerbose = Boolean(process.env.CONCIERGE_VERBOSE_RENDER);
   const runtime = metadata.browser?.runtime;
   const controllerAlive = isProcessAlive(runtime?.controllerPid);
 

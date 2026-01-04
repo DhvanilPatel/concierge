@@ -4,10 +4,10 @@ import { createWriteStream } from 'node:fs';
 import type { WriteStream } from 'node:fs';
 import net from 'node:net';
 import type { BrowserModelStrategy, CookieParam } from './browser/types.js';
-import type { TransportFailureReason, ModelName, ThinkingTimeLevel } from './oracle.js';
-import { DEFAULT_MODEL } from './oracle.js';
-import { safeModelSlug } from './oracle/modelResolver.js';
-import { getOracleHomeDir } from './oracleHome.js';
+import type { TransportFailureReason, ModelName, ThinkingTimeLevel } from './concierge.js';
+import { DEFAULT_MODEL } from './concierge.js';
+import { safeModelSlug } from './concierge/modelResolver.js';
+import { getConciergeHomeDir } from './conciergeHome.js';
 
 export type SessionMode = 'api' | 'browser';
 
@@ -58,6 +58,8 @@ export interface BrowserMetadata {
 }
 
 export interface SessionResponseMetadata {
+  /** Response identifier (legacy data may still use `id`). */
+  responseId?: string;
   id?: string;
   requestId?: string | null;
   status?: string;
@@ -169,7 +171,7 @@ interface InitializeSessionOptions extends StoredRunOptions {
 }
 
 export function getSessionsDir(): string {
-  return path.join(getOracleHomeDir(), 'sessions');
+  return path.join(getConciergeHomeDir(), 'sessions');
 }
 const METADATA_FILENAME = 'meta.json';
 const LEGACY_SESSION_FILENAME = 'session.json';

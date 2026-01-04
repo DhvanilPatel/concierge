@@ -21,7 +21,7 @@ describe('gemini-web saveFirstGeminiImageFromOutput', () => {
       return new Response(new Uint8Array([9, 8, 7, 6]), { status: 200, headers: { 'content-type': 'image/jpeg' } });
     });
 
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oracle-gemini-'));
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'concierge-gemini-'));
     const outputPath = path.join(tempDir, 'out.jpg');
 
     const output = {

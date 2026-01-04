@@ -15,7 +15,7 @@ These checks validate the real Chrome automation path and the Gemini web client.
 
 ### Quick browser port smoke
 
-- `pnpm test:browser` — launches headful Chrome and checks the DevTools endpoint is reachable. Set `ORACLE_BROWSER_PORT` (or `ORACLE_BROWSER_DEBUG_PORT`) to reuse a fixed port when you’ve already opened a firewall rule.
+- `pnpm test:browser` — launches headful Chrome and checks the DevTools endpoint is reachable. Set `CONCIERGE_BROWSER_PORT` (or `CONCIERGE_BROWSER_DEBUG_PORT`) to reuse a fixed port when you’ve already opened a firewall rule.
 
 ### Gemini web mode (Gemini web / cookies)
 

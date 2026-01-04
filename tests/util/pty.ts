@@ -37,7 +37,7 @@ export interface RunPtyResult {
  * Spawn the compiled concierge CLI under a pseudo-TTY and drive it with scripted steps.
  * The caller is responsible for cleaning up the returned homeDir.
  */
-export async function runOracleTuiWithPty({
+export async function runConciergeTuiWithPty({
   steps,
   env: envOverrides = {},
   cols = 100,
@@ -62,7 +62,7 @@ export async function runOracleTuiWithPty({
     ...process.env,
     // Uppercase env names are intentional for CLI behavior.
     // biome-ignore lint/style/useNamingConvention: env keys stay uppercase
-    ORACLE_FORCE_TUI: '1',
+    CONCIERGE_FORCE_TUI: '1',
     // biome-ignore lint/style/useNamingConvention: env keys stay uppercase
     CONCIERGE_HOME_DIR: home,
     // biome-ignore lint/style/useNamingConvention: env keys stay uppercase

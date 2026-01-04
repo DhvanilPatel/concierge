@@ -16,10 +16,10 @@
     - Move the tarball into repo root (e.g., `concierge-ai-<version>.tgz`) and generate `*.sha1` / `*.sha256`.
     - Keep these files handy for the GitHub release; do **not** commit them.
  - [ ] Rebuild macOS notifier helper with signing + notarization:
-    - `cd vendor/oracle-notifier && ./build-notifier.sh` (requires `CODESIGN_ID` and `APP_STORE_CONNECT_*`).
+    - `cd vendor/concierge-notifier && ./build-notifier.sh` (requires `CODESIGN_ID` and `APP_STORE_CONNECT_*`).
     - Signing inputs (same as Trimmy): `CODESIGN_ID="Developer ID Application: Peter Steinberger (Y5PE65HELJ)"` plus notary env vars `APP_STORE_CONNECT_API_KEY_P8`, `APP_STORE_CONNECT_KEY_ID`, and `APP_STORE_CONNECT_ISSUER_ID`.
     - Sparkle ed25519 private key lives at `/Users/steipete/Library/CloudStorage/Dropbox/Backup/Sparkle`; export `SPARKLE_PRIVATE_KEY_FILE` to that path whenever the build script needs to sign an appcast/enclosure.
-    - Verify tickets: `xcrun stapler validate vendor/oracle-notifier/OracleNotifier.app` and `spctl -a -t exec -vv vendor/oracle-notifier/OracleNotifier.app`.
+    - Verify tickets: `xcrun stapler validate vendor/concierge-notifier/ConciergeNotifier.app` and `spctl -a -t exec -vv vendor/concierge-notifier/ConciergeNotifier.app`.
 3. **Changelog & docs**
   - [ ] Update `CHANGELOG.md` (or release notes) with highlights.
   - [ ] Keep changelog entries product-facing only; avoid adding release-status/meta lines (e.g., “Published to npm …”)—that belongs in the GitHub release body.
@@ -30,7 +30,7 @@
    - [ ] `pnpm run check` (zero warnings allowed; fail on any lint/type warnings).
    - [ ] `pnpm vitest`
    - [ ] `pnpm run lint`
-   - [ ] Optional live browser smoke: `ORACLE_LIVE_TEST=1 pnpm test:live`
+   - [ ] Optional live browser smoke: `CONCIERGE_LIVE_TEST=1 pnpm test:live`
 5. **Publish (npm)**
    - [ ] Ensure git status is clean; commit and push any pending changes.
    - [ ] Avoid repeated browser auth: create a granular access token with **write** + **Bypass 2FA** at npmjs.com/settings/~/tokens, then export it (e.g., `export NPM_TOKEN=...` in `~/.profile`) and set `//registry.npmjs.org/:_authToken=${NPM_TOKEN}` in `~/.npmrc`.

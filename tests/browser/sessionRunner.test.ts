@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from 'vitest';
-import type { RunOracleOptions } from '../../src/oracle.js';
+import type { RunConciergeOptions } from '../../src/concierge.js';
 import type { BrowserSessionConfig } from '../../src/sessionStore.js';
 import { runBrowserSessionExecution } from '../../src/browser/sessionRunner.js';
 
-const baseRunOptions: RunOracleOptions = {
+const baseRunOptions: RunConciergeOptions = {
   prompt: 'Hello world',
   model: 'gpt-5.2-pro',
   file: [],

@@ -9,7 +9,7 @@ import * as profileState from '../../src/browser/profileState.js';
 
 describe('profileState', () => {
   test('writes DevToolsActivePort to both root and Default', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'oracle-profile-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'concierge-profile-'));
     try {
       await profileState.writeDevToolsActivePort(dir, 12345);
       const root = path.join(dir, 'DevToolsActivePort');
@@ -24,8 +24,8 @@ describe('profileState', () => {
     }
   });
 
-  test('cleans DevToolsActivePort, but only removes locks when oracle pid is dead', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'oracle-profile-'));
+  test('cleans DevToolsActivePort, but only removes locks when concierge pid is dead', async () => {
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'concierge-profile-'));
     const lockFiles = [
       path.join(dir, 'lockfile'),
       path.join(dir, 'SingletonLock'),
@@ -40,7 +40,7 @@ describe('profileState', () => {
 
       // Alive pid => keep locks
       await profileState.writeChromePid(dir, process.pid);
-      await profileState.cleanupStaleProfileState(dir, undefined, { lockRemovalMode: 'if_oracle_pid_dead' });
+      await profileState.cleanupStaleProfileState(dir, undefined, { lockRemovalMode: 'if_concierge_pid_dead' });
       expect(existsSync(path.join(dir, 'DevToolsActivePort'))).toBe(false);
       for (const lock of lockFiles) {
         expect(existsSync(lock)).toBe(true);
@@ -53,7 +53,7 @@ describe('profileState', () => {
       const child = spawn(process.execPath, ['-e', 'process.exit(0)'], { stdio: 'ignore' });
       await once(child, 'exit');
       await profileState.writeChromePid(dir, child.pid ?? 0);
-      await profileState.cleanupStaleProfileState(dir, undefined, { lockRemovalMode: 'if_oracle_pid_dead' });
+      await profileState.cleanupStaleProfileState(dir, undefined, { lockRemovalMode: 'if_concierge_pid_dead' });
       for (const lock of lockFiles) {
         expect(existsSync(lock)).toBe(false);
       }
@@ -63,7 +63,7 @@ describe('profileState', () => {
   });
 
   test('skips manual-login cleanup when DevTools port is still reachable', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'oracle-profile-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'concierge-profile-'));
     try {
       await profileState.writeDevToolsActivePort(dir, 12345);
       await expect(
@@ -78,7 +78,7 @@ describe('profileState', () => {
   });
 
   test('runs manual-login cleanup when DevTools port is unreachable', async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'oracle-profile-'));
+    const dir = await mkdtemp(path.join(os.tmpdir(), 'concierge-profile-'));
     try {
       await profileState.writeDevToolsActivePort(dir, 12345);
       await expect(

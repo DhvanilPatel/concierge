@@ -4,7 +4,7 @@ import kleur from 'kleur';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
-import { DEFAULT_MODEL, MODEL_CONFIGS, type ModelName, type RunOracleOptions } from '../../oracle.js';
+import { DEFAULT_MODEL, MODEL_CONFIGS, type ModelName, type RunConciergeOptions } from '../../concierge.js';
 import { renderMarkdownAnsi } from '../markdownRenderer.js';
 import type { SessionMetadata, SessionMode, BrowserSessionConfig, SessionModelRun } from '../../sessionStore.js';
 import { sessionStore, pruneOldSessions } from '../../sessionStore.js';
@@ -14,7 +14,7 @@ import { formatSessionTableHeader, formatSessionTableRow } from '../sessionTable
 import { buildBrowserConfig, resolveBrowserModelLabel } from '../browserConfig.js';
 import { resolveNotificationSettings } from '../notifier.js';
 import { loadUserConfig, type UserConfig } from '../../config.js';
-import { formatTokenCount } from '../../oracle/runUtils.js';
+import { formatTokenCount } from '../../concierge/runUtils.js';
 
 const isTty = (): boolean => Boolean(process.stdout.isTTY && chalk.level > 0);
 const dim = (text: string): string => (isTty() ? kleur.dim(text) : text);
@@ -119,7 +119,7 @@ export async function launchTui({ version, printIntro = true }: LaunchTuiOptions
         });
     });
 
-    if (process.env.ORACLE_DEBUG_TUI === '1') {
+    if (process.env.CONCIERGE_DEBUG_TUI === '1') {
       console.error(`[tui] selection=${JSON.stringify(selection)}`);
     }
     pagingFailures = 0;
@@ -131,7 +131,7 @@ export async function launchTui({ version, printIntro = true }: LaunchTuiOptions
       return;
     }
     if (selection === '__ask__') {
-      await askOracleFlow(version, userConfig);
+      await askConciergeFlow(version, userConfig);
       continue;
     }
     if (selection === '__older__') {
@@ -320,7 +320,7 @@ interface WizardAnswers {
   keepBrowser?: boolean;
 }
 
-async function askOracleFlow(version: string, userConfig: UserConfig): Promise<void> {
+async function askConciergeFlow(version: string, userConfig: UserConfig): Promise<void> {
   const modelChoices = Object.keys(MODEL_CONFIGS) as ModelName[];
   const mode: SessionMode = 'browser';
 
@@ -389,7 +389,7 @@ async function askOracleFlow(version: string, userConfig: UserConfig): Promise<v
   const promptWithSuffix = userConfig.promptSuffix ? `${prompt.trim()}\n${userConfig.promptSuffix}` : prompt;
   await sessionStore.ensureStorage();
   await pruneOldSessions(userConfig.sessionRetentionHours, (message) => console.log(chalk.dim(message)));
-  const runOptions: RunOracleOptions = {
+  const runOptions: RunConciergeOptions = {
     prompt: promptWithSuffix,
     model: answers.model,
     file: answers.files,
@@ -501,5 +501,5 @@ async function readStoredPrompt(sessionId: string): Promise<string | null> {
 }
 
 // Exported for testing
-export { askOracleFlow, showSessionDetail };
+export { askConciergeFlow, showSessionDetail };
 export { resolveSessionCost as resolveCost } from '../sessionTable.js';

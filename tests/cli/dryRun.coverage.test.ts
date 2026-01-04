@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest';
 import { runDryRunSummary, runBrowserPreview } from '../../src/cli/dryRun.js';
-import type { RunOracleOptions } from '../../src/oracle/types.js';
+import type { RunConciergeOptions } from '../../src/concierge/types.js';
 
-const baseRunOptions: RunOracleOptions = {
+const baseRunOptions: RunConciergeOptions = {
   prompt: 'Do it',
   system: 'SYS',
   file: [],

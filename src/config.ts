@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import JSON5 from 'json5';
-import { getOracleHomeDir } from './oracleHome.js';
+import { getConciergeHomeDir } from './conciergeHome.js';
 import type { BrowserModelStrategy } from './browser/types.js';
-import type { ThinkingTimeLevel } from './oracle/types.js';
+import type { ThinkingTimeLevel } from './concierge/types.js';
 
 export type EnginePreference = 'api' | 'browser';
 
@@ -31,7 +31,7 @@ export interface BrowserConfigDefaults {
   thinkingTime?: ThinkingTimeLevel;
   /** Skip cookie sync and reuse a persistent automation profile (waits for manual ChatGPT login). */
   manualLogin?: boolean;
-  /** Manual-login profile directory override (also available via ORACLE_BROWSER_PROFILE_DIR). */
+  /** Manual-login profile directory override (also available via CONCIERGE_BROWSER_PROFILE_DIR). */
   manualLoginProfileDir?: string | null;
 }
 
@@ -57,7 +57,7 @@ export interface UserConfig {
 }
 
 function resolveConfigPath(): string {
-  return path.join(getOracleHomeDir(), 'config.json');
+  return path.join(getConciergeHomeDir(), 'config.json');
 }
 
 export interface LoadConfigResult {

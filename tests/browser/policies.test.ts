@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { buildAttachmentPlan, buildCookiePlan } from '../../src/browser/policies.js';
-import { formatFileSection } from '../../src/oracle/markdown.js';
+import { formatFileSection } from '../../src/concierge/markdown.js';
 
 const sections = [
   { displayPath: 'a.txt', absolutePath: '/repo/a.txt', content: 'hello' },

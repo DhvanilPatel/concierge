@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { BrowserSessionConfig } from '../sessionStore.js';
-import type { ModelName, ThinkingTimeLevel } from '../oracle.js';
+import type { ModelName, ThinkingTimeLevel } from '../concierge.js';
 import { CHATGPT_URL, DEFAULT_MODEL_STRATEGY, DEFAULT_MODEL_TARGET, isTemporaryChatUrl, normalizeChatgptUrl, parseDuration } from '../browserMode.js';
 import { normalizeBrowserModelStrategy } from '../browser/modelStrategy.js';
 import type { BrowserModelStrategy } from '../browser/types.js';
 import type { CookieParam } from '../browser/types.js';
-import { getOracleHomeDir } from '../oracleHome.js';
+import { getConciergeHomeDir } from '../conciergeHome.js';
 
 const DEFAULT_BROWSER_TIMEOUT_MS = 1_200_000;
 const DEFAULT_BROWSER_INPUT_TIMEOUT_MS = 60_000;
@@ -89,12 +89,14 @@ export async function buildBrowserConfig(options: BrowserFlagOptions): Promise<B
   const shouldUseOverride = !isChatGptModel && normalizedOverride.length > 0 && normalizedOverride !== baseModel;
   const modelStrategy =
     normalizeBrowserModelStrategy(options.browserModelStrategy) ?? DEFAULT_MODEL_STRATEGY;
-  const cookieNames = parseCookieNames(options.browserCookieNames ?? process.env.ORACLE_BROWSER_COOKIE_NAMES);
+  const cookieNames = parseCookieNames(
+    options.browserCookieNames ?? process.env.CONCIERGE_BROWSER_COOKIE_NAMES,
+  );
   let inline = await resolveInlineCookies({
     inlineArg: options.browserInlineCookies,
     inlineFileArg: options.browserInlineCookiesFile,
-    envPayload: process.env.ORACLE_BROWSER_COOKIES_JSON,
-    envFile: process.env.ORACLE_BROWSER_COOKIES_FILE,
+    envPayload: process.env.CONCIERGE_BROWSER_COOKIES_JSON,
+    envFile: process.env.CONCIERGE_BROWSER_COOKIES_FILE,
     cwd: process.cwd(),
   });
   if (inline?.source?.startsWith('home:') && options.browserNoCookieSync !== true) {
@@ -281,7 +283,7 @@ async function resolveInlineCookies({
   }
 
   // fallback: ~/.concierge/cookies.{json,base64}
-  const conciergeHome = getOracleHomeDir();
+  const conciergeHome = getConciergeHomeDir();
   const candidates = ['cookies.json', 'cookies.base64'];
   for (const file of candidates) {
     const fullPath = path.join(conciergeHome, file);

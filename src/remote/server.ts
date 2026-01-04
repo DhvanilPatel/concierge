@@ -64,7 +64,9 @@ export async function createRemoteServer(
   const server = http.createServer();
   const logger = options.logger ?? console.log;
   const authToken = options.token ?? randomBytes(16).toString('hex');
-  const verbose = process.argv.includes('--verbose') || process.env.ORACLE_SERVE_VERBOSE === '1';
+  const verbose =
+    process.argv.includes('--verbose') ||
+    process.env.CONCIERGE_SERVE_VERBOSE === '1';
   const color = process.stdout.isTTY
     ? (formatter: (msg: string) => string, msg: string) => formatter(msg)
     : (_formatter: (msg: string) => string, msg: string) => msg;
@@ -427,7 +429,9 @@ function toCdpCookie(cookie: Cookie): CookieParam | null {
 }
 
 function triggerLocalLoginPrompt(logger: (message: string) => void, url: string): boolean {
-  const verbose = process.argv.includes('--verbose') || process.env.ORACLE_SERVE_VERBOSE === '1';
+  const verbose =
+    process.argv.includes('--verbose') ||
+    process.env.CONCIERGE_SERVE_VERBOSE === '1';
   const openers: Array<{ cmd: string; args?: string[] }> = [];
 
   if (process.platform === 'darwin') {

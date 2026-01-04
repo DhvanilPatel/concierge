@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest';
 import { runDryRunSummary } from '../../src/cli/dryRun.js';
-import type { RunOracleOptions } from '../../src/oracle.js';
+import type { RunConciergeOptions } from '../../src/concierge.js';
 
-const baseRunOptions: RunOracleOptions = {
+const baseRunOptions: RunConciergeOptions = {
   prompt: 'Explain the issue',
   model: 'gpt-5.2-pro',
   file: [],

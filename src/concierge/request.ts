@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import type {
   FileContent,
   MinimalFsModule,
-  RunOracleOptions,
+  RunConciergeOptions,
 } from './types.js';
 import { DEFAULT_SYSTEM_PROMPT } from './config.js';
 import { createFileSections, readFiles } from './files.js';
@@ -19,7 +19,7 @@ export function buildPrompt(basePrompt: string, files: FileContent[], cwd = proc
 }
 
 export async function renderPromptMarkdown(
-  options: Pick<RunOracleOptions, 'prompt' | 'file' | 'system'>,
+  options: Pick<RunConciergeOptions, 'prompt' | 'file' | 'system'>,
   deps: { cwd?: string; fs?: MinimalFsModule } = {},
 ): Promise<string> {
   const cwd = deps.cwd ?? process.cwd();

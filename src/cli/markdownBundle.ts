@@ -1,10 +1,10 @@
 import fs from 'node:fs/promises';
-import { DEFAULT_SYSTEM_PROMPT } from '../oracle/config.js';
-import { buildPrompt } from '../oracle/request.js';
-import { createFileSections, readFiles } from '../oracle/files.js';
-import { createFsAdapter } from '../oracle/fsAdapter.js';
-import { buildPromptMarkdown } from '../oracle/promptAssembly.js';
-import type { MinimalFsModule, RunOracleOptions, FileContent } from '../oracle/types.js';
+import { DEFAULT_SYSTEM_PROMPT } from '../concierge/config.js';
+import { buildPrompt } from '../concierge/request.js';
+import { createFileSections, readFiles } from '../concierge/files.js';
+import { createFsAdapter } from '../concierge/fsAdapter.js';
+import { buildPromptMarkdown } from '../concierge/promptAssembly.js';
+import type { MinimalFsModule, RunConciergeOptions, FileContent } from '../concierge/types.js';
 
 export interface MarkdownBundle {
   markdown: string;
@@ -14,7 +14,7 @@ export interface MarkdownBundle {
 }
 
 export async function buildMarkdownBundle(
-  options: Pick<RunOracleOptions, 'prompt' | 'file' | 'system'>,
+  options: Pick<RunConciergeOptions, 'prompt' | 'file' | 'system'>,
   deps: { cwd?: string; fs?: MinimalFsModule } = {},
 ): Promise<MarkdownBundle> {
   const cwd = deps.cwd ?? process.cwd();

@@ -246,7 +246,7 @@ describe('uploadAttachmentFile', () => {
   beforeEach(() => {
     transferSpy = vi
       .spyOn(attachmentDataTransfer, 'transferAttachmentViaDataTransfer')
-      .mockResolvedValue({ fileName: 'oracle-browser-smoke.txt', size: 1 });
+      .mockResolvedValue({ fileName: 'concierge-browser-smoke.txt', size: 1 });
   });
 
   afterEach(() => {
@@ -362,7 +362,7 @@ describe('uploadAttachmentFile', () => {
     await expect(
       uploadAttachmentFile(
         { runtime, dom },
-        { path: '/tmp/oracle-browser-smoke.txt', displayPath: 'oracle-browser-smoke.txt' },
+        { path: '/tmp/concierge-browser-smoke.txt', displayPath: 'concierge-browser-smoke.txt' },
         logger,
       ),
     ).resolves.toBe(true);
@@ -403,7 +403,7 @@ describe('uploadAttachmentFile', () => {
     await expect(
       uploadAttachmentFile(
         { runtime, dom },
-        { path: '/tmp/oracle-browser-smoke.txt', displayPath: 'oracle-browser-smoke.txt' },
+        { path: '/tmp/concierge-browser-smoke.txt', displayPath: 'concierge-browser-smoke.txt' },
         logger,
         { expectedCount: 1 },
       ),
@@ -446,7 +446,7 @@ describe('uploadAttachmentFile', () => {
     await expect(
       uploadAttachmentFile(
         { runtime, dom },
-        { path: '/tmp/oracle-browser-smoke.txt', displayPath: 'oracle-browser-smoke.txt' },
+        { path: '/tmp/concierge-browser-smoke.txt', displayPath: 'concierge-browser-smoke.txt' },
         logger,
         { expectedCount: 1 },
       ),
@@ -503,7 +503,7 @@ describe('uploadAttachmentFile', () => {
               value: {
                 chipCount: 1,
                 chips: [],
-                inputNames: ['oracle-browser-smoke.txt'],
+                inputNames: ['concierge-browser-smoke.txt'],
                 composerText: '',
                 uploading: true,
               },
@@ -523,7 +523,7 @@ describe('uploadAttachmentFile', () => {
     await expect(
       uploadAttachmentFile(
         { runtime, dom },
-        { path: '/tmp/oracle-browser-smoke.txt', displayPath: 'oracle-browser-smoke.txt' },
+        { path: '/tmp/concierge-browser-smoke.txt', displayPath: 'concierge-browser-smoke.txt' },
         logger,
       ),
     ).resolves.toBe(true);
@@ -606,7 +606,7 @@ describe('uploadAttachmentFile', () => {
     vi.useFakeTimers();
     const uploadPromise = uploadAttachmentFile(
       { runtime, dom },
-      { path: '/tmp/oracle-browser-smoke.txt', displayPath: 'oracle-browser-smoke.txt' },
+      { path: '/tmp/concierge-browser-smoke.txt', displayPath: 'concierge-browser-smoke.txt' },
       logger,
     );
     await Promise.resolve();
@@ -682,7 +682,7 @@ describe('uploadAttachmentFile', () => {
               value: {
                 chipCount: 1,
                 chips: [],
-                inputNames: ['oracle-browser-smoke.txt'],
+                inputNames: ['concierge-browser-smoke.txt'],
                 composerText: '',
                 uploading: false,
               },
@@ -702,7 +702,7 @@ describe('uploadAttachmentFile', () => {
     await expect(
       uploadAttachmentFile(
         { runtime, dom },
-        { path: '/tmp/oracle-browser-smoke.txt', displayPath: 'oracle-browser-smoke.txt' },
+        { path: '/tmp/concierge-browser-smoke.txt', displayPath: 'concierge-browser-smoke.txt' },
         logger,
       ),
     ).resolves.toBe(true);
@@ -750,7 +750,7 @@ describe('uploadAttachmentFile', () => {
             },
           };
         }
-        if (expr.includes('input[type="file"][data-oracle-upload-idx') && expr.includes('names')) {
+        if (expr.includes('input[type="file"][data-concierge-upload-idx') && expr.includes('names')) {
           return { result: { value: { names: [], value: '', count: 0 } } };
         }
         if (expr.includes('chipCount') && expr.includes('composerText') && expr.includes('uploading')) {
@@ -773,7 +773,7 @@ describe('uploadAttachmentFile', () => {
     vi.useFakeTimers();
     const uploadPromise = uploadAttachmentFile(
       { runtime, dom },
-      { path: '/tmp/oracle-browser-smoke.txt', displayPath: 'oracle-browser-smoke.txt' },
+      { path: '/tmp/concierge-browser-smoke.txt', displayPath: 'concierge-browser-smoke.txt' },
       logger,
     );
     const handledPromise = uploadPromise.catch((error) => error as Error);
@@ -850,7 +850,7 @@ describe('uploadAttachmentFile', () => {
     vi.useFakeTimers();
     const uploadPromise = uploadAttachmentFile(
       { runtime, dom },
-      { path: '/tmp/oracle-browser-smoke.txt', displayPath: 'oracle-browser-smoke.txt' },
+      { path: '/tmp/concierge-browser-smoke.txt', displayPath: 'concierge-browser-smoke.txt' },
       logger,
     );
     await Promise.resolve();
@@ -870,7 +870,7 @@ describe('waitForAttachmentVisible', () => {
     const evaluate = vi.fn().mockResolvedValue({ result: { value: { found: true, source: 'file-input' } } });
     const runtime = { evaluate } as unknown as ChromeClient['Runtime'];
 
-    await expect(attachments.waitForAttachmentVisible(runtime, 'oracle-browser-smoke.txt', 100, logger)).resolves.toBeUndefined();
+    await expect(attachments.waitForAttachmentVisible(runtime, 'concierge-browser-smoke.txt', 100, logger)).resolves.toBeUndefined();
 
     const call = (evaluate as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[0] as
       | { expression?: string }

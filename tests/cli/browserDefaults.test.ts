@@ -105,14 +105,14 @@ describe('applyBrowserDefaultsFromConfig', () => {
     const config: UserConfig = {
       browser: {
         manualLogin: true,
-        manualLoginProfileDir: '/tmp/oracle-profile',
+        manualLoginProfileDir: '/tmp/concierge-profile',
       },
     };
 
     applyBrowserDefaultsFromConfig(options, config, (_key) => 'default');
 
     expect(options.browserManualLogin).toBe(true);
-    expect(options.browserManualLoginProfileDir).toBe('/tmp/oracle-profile');
+    expect(options.browserManualLoginProfileDir).toBe('/tmp/concierge-profile');
   });
 
   test('does not override manual-login when CLI enabled it', () => {

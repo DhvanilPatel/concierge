@@ -5,7 +5,7 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { createGeminiWebExecutor } from '../../src/gemini-web/executor.js';
 import { getCookies } from '@steipete/sweet-cookie';
 
-const live = process.env.ORACLE_LIVE_TEST === '1';
+const live = process.env.CONCIERGE_LIVE_TEST === '1';
 
 async function assertHasGeminiChromeCookies(): Promise<boolean> {
   const { cookies } = await getCookies({
@@ -61,7 +61,7 @@ function looksLikeJpeg(bytes: Uint8Array): boolean {
   it('accepts an attachment upload (image) without failing', async () => {
     if (!(await assertHasGeminiChromeCookies())) return;
 
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oracle-gemini-web-live-'));
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'concierge-gemini-web-live-'));
     const attachmentPath = path.join(tempDir, 'input.png');
     const png = Buffer.from(
       'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/Pm2zXwAAAABJRU5ErkJggg==',
@@ -111,7 +111,7 @@ function looksLikeJpeg(bytes: Uint8Array): boolean {
   it('generate-image writes an output file', async () => {
     if (!(await assertHasGeminiChromeCookies())) return;
 
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oracle-gemini-web-live-'));
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'concierge-gemini-web-live-'));
     const outputPath = path.join(tempDir, 'generated.jpg');
 
     const exec = createGeminiWebExecutor({
@@ -139,7 +139,7 @@ function looksLikeJpeg(bytes: Uint8Array): boolean {
   it('edit-image writes an output file', async () => {
     if (!(await assertHasGeminiChromeCookies())) return;
 
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'oracle-gemini-web-live-'));
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'concierge-gemini-web-live-'));
     const inputPath = path.join(tempDir, 'input.png');
     const outputPath = path.join(tempDir, 'edited.jpg');
 

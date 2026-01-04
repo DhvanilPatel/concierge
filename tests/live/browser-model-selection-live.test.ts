@@ -4,7 +4,7 @@ import type { BrowserLogger } from '../../src/browser/types.js';
 import { getCookies } from '@steipete/sweet-cookie';
 import { acquireLiveTestLock, releaseLiveTestLock } from './liveLock.js';
 
-const LIVE = process.env.ORACLE_LIVE_TEST === '1';
+const LIVE = process.env.CONCIERGE_LIVE_TEST === '1';
 
 async function hasChatGptCookies(): Promise<boolean> {
   const { cookies } = await getCookies({

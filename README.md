@@ -11,8 +11,6 @@
 
 Concierge bundles your prompt and files so another AI can answer with real context. It drives ChatGPT in your browser (GPT‑5.2 variants) and can optionally use the Gemini web client for image work. No API keys required; use `--copy` for manual paste or `--render` to preview the bundle before you run.
 
-*Forked from [Oracle](https://github.com/steipete/oracle) with improvements to browser session cleanup and multi-modal support.*
-
 ## Quick start
 
 Clone and build:
@@ -65,9 +63,8 @@ Concierge reads an optional per-user config from `~/.concierge/config.json`. The
 Environment variables:
 - `CONCIERGE_HOME_DIR` — override the default `~/.concierge` directory
 
-## Key differences from Oracle
+## Highlights
 
-- **Renamed**: `oracle` → `concierge`, `~/.oracle` → `~/.concierge`
 - **Browser-only**: API clients and multi-model runs have been removed for a smaller, clearer CLI
 - **Improved browser cleanup** (in progress): Better process supervision, session state management
 - **Multi-modal support** (planned): Image, video, and audio generation through browser automation

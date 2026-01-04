@@ -1,8 +1,8 @@
 import { InvalidArgumentError, type Command } from 'commander';
 import path from 'node:path';
 import fg from 'fast-glob';
-import type { ModelName, PreviewMode } from '../oracle.js';
-import { DEFAULT_MODEL, MODEL_CONFIGS } from '../oracle.js';
+import type { ModelName, PreviewMode } from '../concierge.js';
+import { DEFAULT_MODEL, MODEL_CONFIGS } from '../concierge.js';
 
 export function collectPaths(value: string | string[] | undefined, previous: string[] = []): string[] {
   if (!value) {

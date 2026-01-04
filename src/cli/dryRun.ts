@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import type { RunOracleOptions, PreviewMode } from '../oracle.js';
+import type { RunConciergeOptions, PreviewMode } from '../concierge.js';
 import { assembleBrowserPrompt, type BrowserPromptArtifacts } from '../browser/prompt.js';
 import type { BrowserAttachment } from '../browser/types.js';
 import type { BrowserSessionConfig } from '../sessionStore.js';
@@ -18,7 +18,7 @@ export async function runDryRunSummary(
     log,
     browserConfig,
   }: {
-    runOptions: RunOracleOptions;
+    runOptions: RunConciergeOptions;
     cwd: string;
     version: string;
     log: (message: string) => void;
@@ -37,7 +37,7 @@ async function runBrowserDryRun(
     log,
     browserConfig,
   }: {
-    runOptions: RunOracleOptions;
+    runOptions: RunConciergeOptions;
     cwd: string;
     version: string;
     log: (message: string) => void;
@@ -96,7 +96,7 @@ export async function runBrowserPreview(
     previewMode,
     log,
   }: {
-    runOptions: RunOracleOptions;
+    runOptions: RunConciergeOptions;
     cwd: string;
     version: string;
     previewMode: PreviewMode;

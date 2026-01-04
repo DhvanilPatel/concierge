@@ -11,7 +11,7 @@ type BunBuildConfig = {
 };
 
 const buildConfig: BunBuildConfig = {
-  entrypoints: ['./bin/oracle-cli.js'],
+  entrypoints: ['./bin/concierge-cli.js'],
   outdir: './.bun-check',
   target: 'bun',
   minify: false,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveRunOptionsFromConfig } from '../src/cli/runOptions.js';
-import { DEFAULT_MODEL } from '../src/oracle/config.js';
+import { DEFAULT_MODEL } from '../src/concierge/config.js';
 
 const basePrompt = 'This prompt is comfortably above twenty characters.';
 

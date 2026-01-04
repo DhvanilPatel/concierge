@@ -3,15 +3,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, test, afterEach } from 'vitest';
 import { buildBrowserConfig } from '../../src/cli/browserConfig.js';
-import { setOracleHomeDirOverrideForTest } from '../../src/oracleHome.js';
+import { setConciergeHomeDirOverrideForTest } from '../../src/conciergeHome.js';
 
 const model = 'gpt-5.1' as const;
 
 describe('buildBrowserConfig inline cookies', () => {
   afterEach(() => {
-    setOracleHomeDirOverrideForTest(null);
-    delete process.env.ORACLE_BROWSER_COOKIES_JSON;
-    delete process.env.ORACLE_BROWSER_COOKIES_FILE;
+    setConciergeHomeDirOverrideForTest(null);
+    delete process.env.CONCIERGE_BROWSER_COOKIES_JSON;
+    delete process.env.CONCIERGE_BROWSER_COOKIES_FILE;
   });
 
   test('loads inline cookies from explicit file flag', async () => {
@@ -46,7 +46,7 @@ describe('buildBrowserConfig inline cookies', () => {
   test('ignores ~/.concierge/cookies.json when cookie sync is enabled', async () => {
     const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'concierge-home-'));
     const conciergeDir = path.join(fakeHome, '.concierge');
-    setOracleHomeDirOverrideForTest(conciergeDir);
+    setConciergeHomeDirOverrideForTest(conciergeDir);
     await fs.mkdir(conciergeDir, { recursive: true });
     const homeFile = path.join(conciergeDir, 'cookies.json');
     await fs.writeFile(homeFile, JSON.stringify([{ name: 'cf_clearance', value: 'token', domain: 'chatgpt.com' }]));
@@ -58,7 +58,7 @@ describe('buildBrowserConfig inline cookies', () => {
   test('uses ~/.concierge/cookies.json when cookie sync is disabled', async () => {
     const fakeHome = await fs.mkdtemp(path.join(os.tmpdir(), 'concierge-home-'));
     const conciergeDir = path.join(fakeHome, '.concierge');
-    setOracleHomeDirOverrideForTest(conciergeDir);
+    setConciergeHomeDirOverrideForTest(conciergeDir);
     await fs.mkdir(conciergeDir, { recursive: true });
     const homeFile = path.join(conciergeDir, 'cookies.json');
     await fs.writeFile(homeFile, JSON.stringify([{ name: 'cf_clearance', value: 'token', domain: 'chatgpt.com' }]));

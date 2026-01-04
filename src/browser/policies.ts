@@ -1,4 +1,4 @@
-import { formatFileSection } from '../oracle/markdown.js';
+import { formatFileSection } from '../concierge/markdown.js';
 import type { BrowserAttachment } from './types.js';
 import type { BrowserSessionConfig } from '../sessionManager.js';
 

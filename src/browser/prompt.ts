@@ -1,16 +1,16 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import type { RunOracleOptions } from '../oracle.js';
+import type { RunConciergeOptions } from '../concierge.js';
 import {
   readFiles,
   createFileSections,
   MODEL_CONFIGS,
   TOKENIZER_OPTIONS,
   formatFileSection,
-} from '../oracle.js';
-import { isKnownModel } from '../oracle/modelResolver.js';
-import { buildPromptMarkdown } from '../oracle/promptAssembly.js';
+} from '../concierge.js';
+import { isKnownModel } from '../concierge/modelResolver.js';
+import { buildPromptMarkdown } from '../concierge/promptAssembly.js';
 import type { BrowserAttachment } from './types.js';
 import { buildAttachmentPlan } from './policies.js';
 
@@ -52,7 +52,7 @@ interface AssemblePromptDeps {
 }
 
 export async function assembleBrowserPrompt(
-  runOptions: RunOracleOptions,
+  runOptions: RunConciergeOptions,
   deps: AssemblePromptDeps = {},
 ): Promise<BrowserPromptArtifacts> {
   const cwd = deps.cwd ?? process.cwd();

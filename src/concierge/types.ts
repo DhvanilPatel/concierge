@@ -68,7 +68,7 @@ export interface FileTokenStats {
 
 export type PreviewMode = 'summary' | 'json' | 'full';
 
-export interface RunOracleOptions {
+export interface RunConciergeOptions {
   prompt: string;
   model: ModelName;
   file?: string[];

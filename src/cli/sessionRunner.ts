@@ -7,7 +7,7 @@ import type {
   BrowserSessionConfig,
   BrowserRuntimeMetadata,
 } from '../sessionStore.js';
-import type { RunOracleOptions } from '../oracle.js';
+import type { RunConciergeOptions } from '../concierge.js';
 import { runBrowserSessionExecution, type BrowserSessionRunnerDeps } from '../browser/sessionRunner.js';
 import { markErrorLogged } from './errorUtils.js';
 import {
@@ -16,7 +16,7 @@ import {
   deriveNotificationSettingsFromMetadata,
 } from './notifier.js';
 import { sessionStore } from '../sessionStore.js';
-import { asOracleUserError } from '../oracle/errors.js';
+import { asConciergeUserError } from '../concierge/errors.js';
 import { cwd as getCwd } from 'node:process';
 
 const isTty = process.stdout.isTTY;
@@ -24,7 +24,7 @@ const dim = (text: string): string => (isTty ? kleur.dim(text) : text);
 
 export interface SessionRunParams {
   sessionMeta: SessionMetadata;
-  runOptions: RunOracleOptions;
+  runOptions: RunConciergeOptions;
   mode: SessionMode;
   browserConfig?: BrowserSessionConfig;
   cwd: string;
@@ -120,7 +120,7 @@ export async function performSessionRun({
     const message = formatError(error);
     log(`ERROR: ${message}`);
     markErrorLogged(error);
-    const userError = asOracleUserError(error);
+    const userError = asConciergeUserError(error);
     const connectionLost =
       userError?.category === 'browser-automation' && (userError.details as { stage?: string } | undefined)?.stage === 'connection-lost';
     if (connectionLost && mode === 'browser') {

@@ -1,15 +1,15 @@
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { assembleBrowserPrompt } from '../../src/browser/prompt.js';
-import { DEFAULT_SYSTEM_PROMPT, type MODEL_CONFIGS } from '../../src/oracle.js';
-import type { RunOracleOptions } from '../../src/oracle.js';
+import { DEFAULT_SYSTEM_PROMPT, type MODEL_CONFIGS } from '../../src/concierge.js';
+import type { RunConciergeOptions } from '../../src/concierge.js';
 
 const fastTokenizer: typeof MODEL_CONFIGS['gpt-5.1']['tokenizer'] = (messages) => {
   const typed = messages as Array<{ content: string }>;
   return typed.reduce((sum: number, message) => sum + Math.max(1, Math.ceil(message.content.length / 1000)), 0);
 };
 
-function buildOptions(overrides: Partial<RunOracleOptions> = {}): RunOracleOptions {
+function buildOptions(overrides: Partial<RunConciergeOptions> = {}): RunConciergeOptions {
   return {
     prompt: overrides.prompt ?? 'Explain the bug',
     model: overrides.model ?? 'gpt-5.2-pro',
@@ -17,7 +17,7 @@ function buildOptions(overrides: Partial<RunOracleOptions> = {}): RunOracleOptio
     system: overrides.system,
     browserAttachments: overrides.browserAttachments ?? 'auto',
     browserInlineFiles: overrides.browserInlineFiles,
-  } as RunOracleOptions;
+  } as RunConciergeOptions;
 }
 
 describe('assembleBrowserPrompt', () => {
@@ -127,8 +127,8 @@ describe('assembleBrowserPrompt', () => {
   });
 
   test('inlines files when browserInlineFiles enabled', async () => {
-    const options = buildOptions({ file: ['a.txt'], browserInlineFiles: true } as Partial<RunOracleOptions>);
-    const result = await assembleBrowserPrompt(options as RunOracleOptions, {
+    const options = buildOptions({ file: ['a.txt'], browserInlineFiles: true } as Partial<RunConciergeOptions>);
+    const result = await assembleBrowserPrompt(options as RunConciergeOptions, {
       cwd: '/repo',
       readFilesImpl: async () => [{ path: '/repo/a.txt', content: 'inline test' }],
     });
@@ -157,7 +157,7 @@ describe('assembleBrowserPrompt', () => {
     const readFilesImpl = async (paths: string[]) => (paths.length > 0 ? [{ path: '/repo/doc.md', content: 'inline payload' }] : []);
     const promptOnly = await assembleBrowserPrompt(buildOptions({ file: [] }), { cwd: '/repo', readFilesImpl });
     const inline = await assembleBrowserPrompt(
-      { ...buildOptions({ file: ['doc.md'] }), browserInlineFiles: true } as RunOracleOptions,
+      { ...buildOptions({ file: ['doc.md'] }), browserInlineFiles: true } as RunConciergeOptions,
       { cwd: '/repo', readFilesImpl },
     );
     expect(inline.estimatedInputTokens).toBeGreaterThan(promptOnly.estimatedInputTokens / 2);

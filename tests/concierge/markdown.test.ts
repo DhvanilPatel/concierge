@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatFileSection } from '../../src/oracle/markdown.js';
+import { formatFileSection } from '../../src/concierge/markdown.js';
 
 describe('formatFileSection', () => {
   test('annotates language from extension', () => {

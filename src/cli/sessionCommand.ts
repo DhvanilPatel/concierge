@@ -43,7 +43,7 @@ export async function handleSessionCommand(
 ): Promise<void> {
   const sessionOptions = command.opts<StatusOptions>();
   if (sessionOptions.verboseRender) {
-    process.env.ORACLE_VERBOSE_RENDER = '1';
+    process.env.CONCIERGE_VERBOSE_RENDER = '1';
   }
   const renderSource = command.getOptionValueSource?.('render');
   const renderMarkdownSource = command.getOptionValueSource?.('renderMarkdown');

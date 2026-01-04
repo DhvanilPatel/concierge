@@ -42,4 +42,4 @@ Notes:
 ## Testing
 
 - Unit/regression: `pnpm vitest run tests/gemini-web`
-- Live (Gemini web/cookies): `ORACLE_LIVE_TEST=1 pnpm vitest run tests/live/gemini-web-live.test.ts`
+- Live (Gemini web/cookies): `CONCIERGE_LIVE_TEST=1 pnpm vitest run tests/live/gemini-web-live.test.ts`

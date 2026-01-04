@@ -2,9 +2,9 @@ import Foundation
 import UserNotifications
 
 let args = CommandLine.arguments
-// Usage: OracleNotifier <title> <message> [soundName]
+// Usage: ConciergeNotifier <title> <message> [soundName]
 if args.count < 3 {
-  fputs("usage: OracleNotifier <title> <message> [soundName]\n", stderr)
+  fputs("usage: ConciergeNotifier <title> <message> [soundName]\n", stderr)
   exit(1)
 }
 let title = args[1]

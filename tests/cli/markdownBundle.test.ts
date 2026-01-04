@@ -6,7 +6,7 @@ import os from 'node:os';
 
 describe('buildMarkdownBundle', () => {
   test('renders system + user + files into markdown and prompt with files', async () => {
-    const cwd = await mkdtemp(path.join(os.tmpdir(), 'oracle-md-'));
+    const cwd = await mkdtemp(path.join(os.tmpdir(), 'concierge-md-'));
     const filePath = path.join(cwd, 'a.txt');
     await writeFile(filePath, 'hello world', 'utf8');
 
@@ -25,7 +25,7 @@ describe('buildMarkdownBundle', () => {
   });
 
   test('walks directories and applies excludes in file globs', async () => {
-    const cwd = await mkdtemp(path.join(os.tmpdir(), 'oracle-md-'));
+    const cwd = await mkdtemp(path.join(os.tmpdir(), 'concierge-md-'));
     const keep = path.join(cwd, 'keep.txt');
     const skip = path.join(cwd, 'skip.test.txt');
     await writeFile(keep, 'keep me', 'utf8');

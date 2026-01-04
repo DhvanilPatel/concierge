@@ -2,19 +2,19 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { setOracleHomeDirOverrideForTest } from '../../src/oracleHome.js';
+import { setConciergeHomeDirOverrideForTest } from '../../src/conciergeHome.js';
 import { getSessionsDir } from '../../src/sessionManager.js';
 
 describe('resolveOutputPath', () => {
   let tmpHome: string;
 
   beforeAll(() => {
-    tmpHome = path.join(os.tmpdir(), 'oracle-write-output-test');
-    setOracleHomeDirOverrideForTest(tmpHome);
+    tmpHome = path.join(os.tmpdir(), 'concierge-write-output-test');
+    setConciergeHomeDirOverrideForTest(tmpHome);
   });
 
   afterAll(() => {
-    setOracleHomeDirOverrideForTest(null);
+    setConciergeHomeDirOverrideForTest(null);
   });
 
   test('rejects paths inside session storage', async () => {

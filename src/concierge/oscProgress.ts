@@ -11,25 +11,32 @@ export function supportsOscProgress(
   env: NodeJS.ProcessEnv = process.env,
   isTty: boolean = process.stdout.isTTY,
 ): boolean {
-  if (env.CODEX_MANAGED_BY_NPM === '1' && env.ORACLE_FORCE_OSC_PROGRESS !== '1') {
+  if (
+    env.CODEX_MANAGED_BY_NPM === '1' &&
+    env.CONCIERGE_FORCE_OSC_PROGRESS !== '1'
+  ) {
     return false;
   }
   return supportsOscProgressShared(env, isTty, {
-    disableEnvVar: 'ORACLE_NO_OSC_PROGRESS',
-    forceEnvVar: 'ORACLE_FORCE_OSC_PROGRESS',
+    disableEnvVar: 'CONCIERGE_NO_OSC_PROGRESS',
+    forceEnvVar: 'CONCIERGE_FORCE_OSC_PROGRESS',
   });
 }
 
 export function startOscProgress(options: OscProgressOptions = {}): () => void {
   const env = options.env ?? process.env;
-  if (env.CODEX_MANAGED_BY_NPM === '1' && env.ORACLE_FORCE_OSC_PROGRESS !== '1') {
+  if (
+    env.CODEX_MANAGED_BY_NPM === '1' &&
+    env.CONCIERGE_FORCE_OSC_PROGRESS !== '1'
+  ) {
     return () => {};
   }
   return startOscProgressShared({
     ...options,
-    // Preserve Oracle's previous default: progress emits to stdout.
+    // Preserve Concierge's previous default: progress emits to stdout.
     write: options.write ?? ((text) => process.stdout.write(text)),
-    disableEnvVar: 'ORACLE_NO_OSC_PROGRESS',
-    forceEnvVar: 'ORACLE_FORCE_OSC_PROGRESS',
+    env,
+    disableEnvVar: 'CONCIERGE_NO_OSC_PROGRESS',
+    forceEnvVar: 'CONCIERGE_FORCE_OSC_PROGRESS',
   });
 }

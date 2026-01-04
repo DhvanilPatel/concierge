@@ -1,12 +1,12 @@
 import chalk from 'chalk';
-import type { RunOracleOptions } from '../oracle.js';
-import { formatTokenCount } from '../oracle/runUtils.js';
-import { formatFinishLine } from '../oracle/finishLine.js';
+import type { RunConciergeOptions } from '../concierge.js';
+import { formatTokenCount } from '../concierge/runUtils.js';
+import { formatFinishLine } from '../concierge/finishLine.js';
 import type { BrowserSessionConfig, BrowserRuntimeMetadata } from '../sessionStore.js';
 import { runBrowserMode } from '../browserMode.js';
 import type { BrowserRunResult } from '../browserMode.js';
 import { assembleBrowserPrompt } from './prompt.js';
-import { BrowserAutomationError } from '../oracle/errors.js';
+import { BrowserAutomationError } from '../concierge/errors.js';
 import type { BrowserLogger } from './types.js';
 
 export interface BrowserExecutionResult {
@@ -22,7 +22,7 @@ export interface BrowserExecutionResult {
 }
 
 interface RunBrowserSessionArgs {
-  runOptions: RunOracleOptions;
+  runOptions: RunConciergeOptions;
   browserConfig: BrowserSessionConfig;
   cwd: string;
   log: (message?: string) => void;

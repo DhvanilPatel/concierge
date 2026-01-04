@@ -3,7 +3,7 @@ import { normalizeBrowserModelStrategy } from './modelStrategy.js';
 import type { BrowserAutomationConfig, ResolvedBrowserConfig } from './types.js';
 import { isTemporaryChatUrl, normalizeChatgptUrl } from './utils.js';
 import path from 'node:path';
-import { getOracleHomeDir } from '../oracleHome.js';
+import { getConciergeHomeDir } from '../conciergeHome.js';
 
 export const DEFAULT_BROWSER_CONFIG: ResolvedBrowserConfig = {
   chromeProfile: null,
@@ -34,11 +34,12 @@ export const DEFAULT_BROWSER_CONFIG: ResolvedBrowserConfig = {
 
 export function resolveBrowserConfig(config: BrowserAutomationConfig | undefined): ResolvedBrowserConfig {
   const debugPortEnv = parseDebugPort(
-    process.env.ORACLE_BROWSER_PORT ?? process.env.ORACLE_BROWSER_DEBUG_PORT,
+    process.env.CONCIERGE_BROWSER_PORT ??
+      process.env.CONCIERGE_BROWSER_DEBUG_PORT,
   );
   const envAllowCookieErrors =
-    (process.env.ORACLE_BROWSER_ALLOW_COOKIE_ERRORS ?? '').trim().toLowerCase() === 'true' ||
-    (process.env.ORACLE_BROWSER_ALLOW_COOKIE_ERRORS ?? '').trim() === '1';
+    (process.env.CONCIERGE_BROWSER_ALLOW_COOKIE_ERRORS ?? '').trim().toLowerCase() === 'true' ||
+    (process.env.CONCIERGE_BROWSER_ALLOW_COOKIE_ERRORS ?? '').trim() === '1';
   const rawUrl = config?.chatgptUrl ?? config?.url ?? DEFAULT_BROWSER_CONFIG.url;
   const normalizedUrl = normalizeChatgptUrl(rawUrl ?? DEFAULT_BROWSER_CONFIG.url, DEFAULT_BROWSER_CONFIG.url);
   const desiredModel = config?.desiredModel ?? DEFAULT_BROWSER_CONFIG.desiredModel ?? DEFAULT_MODEL_TARGET;
@@ -57,8 +58,8 @@ export function resolveBrowserConfig(config: BrowserAutomationConfig | undefined
   const cookieSyncDefault = isWindows ? false : DEFAULT_BROWSER_CONFIG.cookieSync;
   const resolvedProfileDir =
     config?.manualLoginProfileDir ??
-    process.env.ORACLE_BROWSER_PROFILE_DIR ??
-    path.join(getOracleHomeDir(), 'browser-profile');
+    process.env.CONCIERGE_BROWSER_PROFILE_DIR ??
+    path.join(getConciergeHomeDir(), 'browser-profile');
   return {
     ...DEFAULT_BROWSER_CONFIG,
     ...(config ?? {}),

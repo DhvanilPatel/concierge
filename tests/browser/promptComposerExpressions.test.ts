@@ -3,7 +3,7 @@ import { buildAttachmentReadyExpressionForTest } from '../../src/browser/actions
 
 describe('prompt composer attachment expressions', () => {
   test('attachment ready check does not match prompt text', () => {
-    const expression = buildAttachmentReadyExpressionForTest(['oracle-attach-verify.txt']);
+    const expression = buildAttachmentReadyExpressionForTest(['concierge-attach-verify.txt']);
     expect(expression).toContain("document.querySelector('[data-testid*=\"composer\"]')");
     expect(expression).toContain('composer.querySelectorAll');
     expect(expression).toContain('input[type="file"]');

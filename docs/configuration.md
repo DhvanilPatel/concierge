@@ -21,14 +21,14 @@ Concierge reads an optional per-user config from `~/.concierge/config.json`. The
     chromeCookiePath: null,
     chatgptUrl: "https://chatgpt.com/", // root is fine; folder URLs also work
     url: null,              // alias for chatgptUrl (kept for back-compat)
-    debugPort: null,        // fixed DevTools port (env: ORACLE_BROWSER_PORT / ORACLE_BROWSER_DEBUG_PORT)
+    debugPort: null,        // fixed DevTools port (env: CONCIERGE_BROWSER_PORT / CONCIERGE_BROWSER_DEBUG_PORT)
     timeoutMs: 1200000,
     inputTimeoutMs: 30000,
     cookieSyncWaitMs: 0,    // wait (ms) before retrying cookie sync when Chrome cookies are empty/locked
     modelStrategy: "select", // select | current | ignore (ChatGPT only; ignored for Gemini web)
     thinkingTime: "extended", // light | standard | extended | heavy (ChatGPT Thinking/Pro models)
     manualLogin: false,        // set true to reuse a persistent automation profile and sign in once (Windows defaults to true when unset)
-    manualLoginProfileDir: null, // override profile dir (or set ORACLE_BROWSER_PROFILE_DIR)
+    manualLoginProfileDir: null, // override profile dir (or set CONCIERGE_BROWSER_PROFILE_DIR)
     headless: false,
     hideWindow: false,
     keepBrowser: false,
@@ -52,9 +52,9 @@ Concierge reads an optional per-user config from `~/.concierge/config.json`. The
 CLI flags → `config.json` → environment → built-in defaults.
 
 - `model`, `heartbeatSeconds`, and `promptSuffix` in `config.json` override auto-detected values unless explicitly set on the CLI.
-- Remote browser defaults follow the same order: `--remote-host/--remote-token` win, then `remote.host` / `remote.token` (or `remoteHost` / `remoteToken`) in the config, then `ORACLE_REMOTE_HOST` / `ORACLE_REMOTE_TOKEN` if still unset.
-- `ORACLE_NOTIFY*` env vars still layer on top of the config’s `notify` block.
-- `sessionRetentionHours` controls the default value for `--retain-hours`. When unset, `ORACLE_RETAIN_HOURS` (if present) becomes the fallback, and the CLI flag still wins over both.
+- Remote browser defaults follow the same order: `--remote-host/--remote-token` win, then `remote.host` / `remote.token` (or `remoteHost` / `remoteToken`) in the config, then `CONCIERGE_REMOTE_HOST` / `CONCIERGE_REMOTE_TOKEN` if still unset.
+- `CONCIERGE_NOTIFY*` env vars still layer on top of the config’s `notify` block.
+- `sessionRetentionHours` controls the default value for `--retain-hours`. When unset, `CONCIERGE_RETAIN_HOURS` (if present) becomes the fallback, and the CLI flag still wins over both.
 - `browser.chatgptUrl` accepts either the root ChatGPT URL (`https://chatgpt.com/`) or a folder/workspace URL (e.g., `https://chatgpt.com/g/.../project`); `browser.url` remains as a legacy alias.
 - Browser automation defaults can be set under `browser.*`, including `browser.manualLogin`, `browser.manualLoginProfileDir`, and `browser.thinkingTime` (CLI override: `--browser-thinking-time`). On Windows, `browser.manualLogin` defaults to `true` when omitted.
 
@@ -68,6 +68,6 @@ Each invocation can optionally prune cached sessions before starting new work:
 
 - `--retain-hours <n>` deletes sessions older than `<n>` hours right before the run begins. Use `0` (or omit the flag) to skip pruning.
 - In `config.json`, set `sessionRetentionHours` to apply pruning automatically for every CLI/TUI invocation.
-- Set `ORACLE_RETAIN_HOURS` in the environment to override the config on shared machines without editing the JSON file.
+- Set `CONCIERGE_RETAIN_HOURS` in the environment to override the config on shared machines without editing the JSON file.
 
 Under the hood, pruning removes entire session directories (metadata + logs). The command-line cleanup command (`concierge session --clear`) still exists when you need to wipe everything manually.

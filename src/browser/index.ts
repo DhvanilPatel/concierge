@@ -35,12 +35,12 @@ import {
 import { uploadAttachmentViaDataTransfer } from './actions/remoteFileTransfer.js';
 import { ensureThinkingTime } from './actions/thinkingTime.js';
 import { estimateTokenCount, withRetries, delay } from './utils.js';
-import { formatElapsed } from '../oracle/format.js';
+import { formatElapsed } from '../concierge/format.js';
 import { CHATGPT_URL, CONVERSATION_TURN_SELECTOR, DEFAULT_MODEL_STRATEGY } from './constants.js';
 import type { LaunchedChrome } from 'chrome-launcher';
-import { BrowserAutomationError } from '../oracle/errors.js';
+import { BrowserAutomationError } from '../concierge/errors.js';
 import { alignPromptEchoPair, buildPromptEchoMatcher } from './reattachHelpers.js';
-import { getOracleHomeDir } from '../oracleHome.js';
+import { getConciergeHomeDir } from '../conciergeHome.js';
 import {
   cleanupStaleProfileState,
   readChromePid,
@@ -131,7 +131,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
   const manualLogin = Boolean(config.manualLogin);
   const manualProfileDir = config.manualLoginProfileDir
     ? path.resolve(config.manualLoginProfileDir)
-    : path.join(getOracleHomeDir(), 'browser-profile');
+    : path.join(getConciergeHomeDir(), 'browser-profile');
   const userDataDir = manualLogin
     ? manualProfileDir
     : await mkdtemp(path.join(await resolveUserDataBaseDir(), 'concierge-browser-'));
@@ -394,7 +394,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
         const base = error instanceof Error ? error.message : String(error);
         const hint =
           appliedCookies === 0
-            ? ' No cookies were applied; log in to ChatGPT in Chrome or provide inline cookies (--browser-inline-cookies[(-file)] or ORACLE_BROWSER_COOKIES_JSON).'
+            ? ' No cookies were applied; log in to ChatGPT in Chrome or provide inline cookies (--browser-inline-cookies[(-file)] or CONCIERGE_BROWSER_COOKIES_JSON).'
             : '';
         throw new Error(`${base}${hint}`);
       });
@@ -909,8 +909,8 @@ async function maybeReuseRunningChrome(userDataDir: string, logger: BrowserLogge
   const probe = await verifyDevToolsReachable({ port });
   if (!probe.ok) {
     logger(`DevToolsActivePort found for ${userDataDir} but unreachable (${probe.error}); launching new Chrome.`);
-    // Safe cleanup: remove stale DevToolsActivePort; only remove lock files if this was an Oracle-owned pid that died.
-    await cleanupStaleProfileState(userDataDir, logger, { lockRemovalMode: 'if_oracle_pid_dead' });
+    // Safe cleanup: remove stale DevToolsActivePort; only remove lock files if this was a Concierge-owned pid that died.
+    await cleanupStaleProfileState(userDataDir, logger, { lockRemovalMode: 'if_concierge_pid_dead' });
     return null;
   }
 
@@ -1275,7 +1275,7 @@ async function runRemoteBrowserMode(
       throw normalizedError;
     }
 
-    throw new BrowserAutomationError('Remote Chrome connection lost before Oracle finished.', {
+    throw new BrowserAutomationError('Remote Chrome connection lost before Concierge finished.', {
       stage: 'connection-lost',
       runtime: {
         chromeHost: host,

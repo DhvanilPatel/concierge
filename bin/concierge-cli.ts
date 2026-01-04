@@ -10,9 +10,9 @@ import { shouldRequirePrompt } from '../src/cli/promptRequirement.js';
 import chalk from 'chalk';
 import type { SessionMetadata, SessionMode, BrowserSessionConfig } from '../src/sessionStore.js';
 import { sessionStore, pruneOldSessions } from '../src/sessionStore.js';
-import { DEFAULT_MODEL, MODEL_CONFIGS, readFiles } from '../src/oracle.js';
-import { isKnownModel } from '../src/oracle/modelResolver.js';
-import type { ModelName, RunOracleOptions } from '../src/oracle.js';
+import { DEFAULT_MODEL, MODEL_CONFIGS, readFiles } from '../src/concierge.js';
+import { isKnownModel } from '../src/concierge/modelResolver.js';
+import type { ModelName, RunConciergeOptions } from '../src/concierge.js';
 import { CHATGPT_URL } from '../src/browserMode.js';
 import { createRemoteBrowserExecutor } from '../src/remote/client.js';
 import { createGeminiWebExecutor } from '../src/gemini-web/index.js';
@@ -473,7 +473,7 @@ const statusCommand = program
     });
   });
 
-function buildRunOptions(options: ResolvedCliOptions, overrides: Partial<RunOracleOptions> = {}): RunOracleOptions {
+function buildRunOptions(options: ResolvedCliOptions, overrides: Partial<RunConciergeOptions> = {}): RunConciergeOptions {
   if (!options.prompt) {
     throw new Error('Prompt is required.');
   }
@@ -502,7 +502,7 @@ function resolveHeartbeatIntervalMs(seconds: number | undefined): number | undef
   return Math.round(seconds * 1000);
 }
 
-function buildRunOptionsFromMetadata(metadata: SessionMetadata): RunOracleOptions {
+function buildRunOptionsFromMetadata(metadata: SessionMetadata): RunConciergeOptions {
   const stored = metadata.options ?? {};
   return {
     prompt: stored.prompt ?? '',
@@ -531,7 +531,7 @@ function getBrowserConfigFromMetadata(metadata: SessionMetadata): BrowserSession
 }
 
 async function runRootCommand(options: CliOptions): Promise<void> {
-  if (process.env.ORACLE_FORCE_TUI === '1') {
+  if (process.env.CONCIERGE_FORCE_TUI === '1') {
     await sessionStore.ensureStorage();
     await launchTui({ version: VERSION, printIntro: false });
     return;
@@ -577,7 +577,7 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     if (optionUsesDefault('retainHours') && typeof userConfig.sessionRetentionHours === 'number') {
       options.retainHours = userConfig.sessionRetentionHours;
     }
-    const envRetention = process.env.ORACLE_RETAIN_HOURS;
+    const envRetention = process.env.CONCIERGE_RETAIN_HOURS;
     if (optionUsesDefault('retainHours') && envRetention) {
       const parsed = Number.parseFloat(envRetention);
       if (!Number.isNaN(parsed)) {
@@ -588,9 +588,15 @@ async function runRootCommand(options: CliOptions): Promise<void> {
   applyRetentionOption();
 
   const remoteHost =
-    options.remoteHost ?? userConfig.remoteHost ?? userConfig.remote?.host ?? process.env.ORACLE_REMOTE_HOST;
+    options.remoteHost ??
+    userConfig.remoteHost ??
+    userConfig.remote?.host ??
+    process.env.CONCIERGE_REMOTE_HOST;
   const remoteToken =
-    options.remoteToken ?? userConfig.remoteToken ?? userConfig.remote?.token ?? process.env.ORACLE_REMOTE_TOKEN;
+    options.remoteToken ??
+    userConfig.remoteToken ??
+    userConfig.remote?.token ??
+    process.env.CONCIERGE_REMOTE_TOKEN;
   if (remoteHost) {
     console.log(chalk.dim(`Remote browser host detected: ${remoteHost}`));
   }
@@ -818,11 +824,11 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     process.cwd(),
     notifications,
   );
-  const liveRunOptions: RunOracleOptions = {
+  const liveRunOptions: RunConciergeOptions = {
     ...baseRunOptions,
     sessionId: sessionMeta.id,
   };
-  const disableDetachEnv = process.env.ORACLE_NO_DETACH === '1';
+  const disableDetachEnv = process.env.CONCIERGE_NO_DETACH === '1';
   const detachAllowed = remoteExecutionActive
     ? false
     : shouldDetachSession({
@@ -872,7 +878,7 @@ async function runRootCommand(options: CliOptions): Promise<void> {
 
 async function runInteractiveSession(
   sessionMeta: SessionMetadata,
-  runOptions: RunOracleOptions,
+  runOptions: RunConciergeOptions,
   mode: SessionMode,
   browserConfig?: BrowserSessionConfig,
   showReattachHint = true,

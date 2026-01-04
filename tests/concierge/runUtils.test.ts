@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatTokenCount, formatTokenValue } from '../../src/oracle/runUtils.js';
+import { formatTokenCount, formatTokenValue } from '../../src/concierge/runUtils.js';
 
 describe('runUtils #formatTokenCount', () => {
   it('returns plain number strings under 1000', () => {

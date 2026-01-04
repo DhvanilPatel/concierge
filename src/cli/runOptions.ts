@@ -1,9 +1,9 @@
-import type { RunOracleOptions, ModelName } from '../oracle.js';
-import { DEFAULT_MODEL } from '../oracle.js';
+import type { RunConciergeOptions, ModelName } from '../concierge.js';
+import { DEFAULT_MODEL } from '../concierge.js';
 import type { UserConfig } from '../config.js';
 import type { EngineMode } from './engine.js';
 import { normalizeModelOption, inferModelFromLabel } from './options.js';
-import { PromptValidationError } from '../oracle/errors.js';
+import { PromptValidationError } from '../concierge/errors.js';
 import { normalizeChatGptModelForBrowser } from './browserConfig.js';
 
 export interface ResolveRunOptionsInput {
@@ -17,7 +17,7 @@ export interface ResolveRunOptionsInput {
 }
 
 export interface ResolvedRunOptions {
-  runOptions: RunOracleOptions;
+  runOptions: RunConciergeOptions;
   resolvedEngine: EngineMode;
   engineCoercedToApi?: boolean;
 }
@@ -65,7 +65,7 @@ export function resolveRunOptionsFromConfig({
   const heartbeatIntervalMs =
     userConfig?.heartbeatSeconds !== undefined ? userConfig.heartbeatSeconds * 1000 : 30_000;
 
-  const runOptions: RunOracleOptions = {
+  const runOptions: RunConciergeOptions = {
     prompt: promptWithSuffix,
     model: chosenModel as ModelName,
     file: files ?? [],

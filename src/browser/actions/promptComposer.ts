@@ -11,7 +11,7 @@ import {
 import { delay } from '../utils.js';
 import { logDomFailure } from '../domDebug.js';
 import { buildClickDispatcher } from './domEvents.js';
-import { BrowserAutomationError } from '../../oracle/errors.js';
+import { BrowserAutomationError } from '../../concierge/errors.js';
 
 const ENTER_KEY_EVENT = {
   key: 'Enter',

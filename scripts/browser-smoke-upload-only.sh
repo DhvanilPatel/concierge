@@ -2,10 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CMD=(node "$ROOT/dist/bin/oracle-cli.js" --engine browser --wait --heartbeat 0 --timeout 900 --browser-input-timeout 120000)
+CMD=(node "$ROOT/dist/bin/concierge-cli.js" --wait --heartbeat 0 --timeout 900 --browser-input-timeout 120000)
 FAST_MODEL="gpt-5.2"
 
-tmpfile="$(mktemp -t oracle-browser-smoke)"
+tmpfile="$(mktemp -t concierge-browser-smoke)"
 echo "smoke-attachment" >"$tmpfile"
 
 echo "[browser-smoke-upload-only] fast upload attachment (non-inline)"

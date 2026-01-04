@@ -229,7 +229,9 @@ function buildChromeFlags(headless: boolean, debugBindAddress?: string | null): 
 }
 
 function parseDebugPortEnv(): number | null {
-  const raw = process.env.ORACLE_BROWSER_PORT ?? process.env.ORACLE_BROWSER_DEBUG_PORT;
+  const raw =
+    process.env.CONCIERGE_BROWSER_PORT ??
+    process.env.CONCIERGE_BROWSER_DEBUG_PORT;
   if (!raw) return null;
   const value = Number.parseInt(raw, 10);
   if (!Number.isFinite(value) || value <= 0 || value > 65535) {
@@ -239,7 +241,9 @@ function parseDebugPortEnv(): number | null {
 }
 
 function resolveRemoteDebugHost(): string | null {
-  const override = process.env.ORACLE_BROWSER_REMOTE_DEBUG_HOST?.trim() || process.env.WSL_HOST_IP?.trim();
+  const override =
+    process.env.CONCIERGE_BROWSER_REMOTE_DEBUG_HOST?.trim() ||
+    process.env.WSL_HOST_IP?.trim();
   if (override) {
     return override;
   }

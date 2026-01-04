@@ -14,7 +14,3 @@ export function setConciergeHomeDirOverrideForTest(dir: string | null): void {
 export function getConciergeHomeDir(): string {
   return conciergeHomeDirOverride ?? process.env.CONCIERGE_HOME_DIR ?? path.join(os.homedir(), '.concierge');
 }
-
-// Legacy exports (internal code still references these names)
-export const setOracleHomeDirOverrideForTest = setConciergeHomeDirOverrideForTest;
-export const getOracleHomeDir = getConciergeHomeDir;
