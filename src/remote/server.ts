@@ -220,7 +220,7 @@ export async function createRemoteServer(
   const also = extras.length ? `, also [${extras.join(', ')}]` : '';
   logger(color(chalk.cyanBright.bold, `Listening at ${primary}${also}`));
   logger(color(chalk.yellowBright, `Access token: ${authToken}`));
-  logger('Leave this terminal running; press Ctrl+C to stop oracle serve.');
+  logger('Leave this terminal running; press Ctrl+C to stop concierge serve.');
 
   return {
     port: address.port,
@@ -234,14 +234,14 @@ export async function createRemoteServer(
 }
 
 export async function serveRemote(options: RemoteServerOptions = {}): Promise<void> {
-  const manualProfileDir = options.manualLoginProfileDir ?? path.join(os.homedir(), '.oracle', 'browser-profile');
+  const manualProfileDir = options.manualLoginProfileDir ?? path.join(os.homedir(), '.concierge', 'browser-profile');
   const preferManualLogin = options.manualLoginDefault || process.platform === 'win32' || isWsl();
   let cookies: CookieParam[] | null = null;
   let opened = false;
 
-  if (isWsl() && process.env.ORACLE_ALLOW_WSL_SERVE !== '1') {
-    console.log('WSL detected. For reliable browser automation, run `oracle serve` from Windows PowerShell/Command Prompt so we can use your Windows Chrome profile.');
-    console.log('If you want to stay in WSL anyway, set ORACLE_ALLOW_WSL_SERVE=1 and ensure a Linux Chrome is installed, then rerun.');
+  if (isWsl() && process.env.CONCIERGE_ALLOW_WSL_SERVE !== '1') {
+    console.log('WSL detected. For reliable browser automation, run `concierge serve` from Windows PowerShell/Command Prompt so we can use your Windows Chrome profile.');
+    console.log('If you want to stay in WSL anyway, set CONCIERGE_ALLOW_WSL_SERVE=1 and ensure a Linux Chrome is installed, then rerun.');
     console.log('Alternatively, start Windows Chrome with --remote-debugging-port=9222 and use `--remote-chrome <windows-ip>:9222`.');
     return;
   }
@@ -276,7 +276,7 @@ export async function serveRemote(options: RemoteServerOptions = {}): Promise<vo
         void launchManualLoginChrome(manualProfileDir, CHATGPT_URL, console.log);
       }
     } else if (opened) {
-      console.log('Opened chatgpt.com for login. Sign in, then restart `oracle serve` to continue.');
+      console.log('Opened chatgpt.com for login. Sign in, then restart `concierge serve` to continue.');
       return;
     } else {
       console.log('Please open https://chatgpt.com/ in this host\'s browser and sign in; then rerun.');

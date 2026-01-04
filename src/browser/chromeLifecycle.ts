@@ -72,7 +72,7 @@ export function registerTerminationHooks(
         // Ensure reattach hints are written before we exit.
         await opts?.emitRuntimeHint?.().catch(() => undefined);
         if (inFlight) {
-          logger('Session still in flight; reattach with "oracle session <slug>" to continue.');
+          logger('Session still in flight; reattach with "concierge session <slug>" to continue.');
         }
       } else {
         try {

@@ -65,7 +65,7 @@ export async function handleSessionCommand(
     return;
   }
   if (sessionId === 'clear' || sessionId === 'clean') {
-    console.error('Session cleanup now uses --clear. Run "oracle session --clear --hours <n>" instead.');
+    console.error('Session cleanup now uses --clear. Run "concierge session --clear --hours <n>" instead.');
     process.exitCode = 1;
     return;
   }
@@ -120,7 +120,7 @@ export function formatSessionCleanupMessage(
 ): string {
   const deletedLabel = `${result.deleted} ${result.deleted === 1 ? 'session' : 'sessions'}`;
   const remainingLabel = `${result.remaining} ${result.remaining === 1 ? 'session' : 'sessions'} remain`;
-  const hint = 'Run "oracle session --clear --all" to delete everything.';
+  const hint = 'Run "concierge session --clear --all" to delete everything.';
   return `Deleted ${deletedLabel} (${scope}). ${remainingLabel}.\n${hint}`;
 }
 

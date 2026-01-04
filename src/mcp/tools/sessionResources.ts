@@ -12,10 +12,10 @@ export function registerSessionResources(server: McpServer): void {
   const template = new ResourceTemplate('oracle-session://{id}/{kind}', { list: undefined });
 
   server.registerResource(
-    'oracle-session',
+    'concierge-session',
     template,
     {
-      title: 'oracle session resources',
+      title: 'concierge session resources',
       description: 'Read stored session metadata, log, or request payload.',
     },
     async (uri, variables) => {
