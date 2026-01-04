@@ -202,6 +202,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       client?.on('disconnect', () => {
         connectionClosedUnexpectedly = true;
         logger('Chrome window closed; attempting to abort run.');
+        void terminateChrome(chrome, logger).catch(() => undefined);
         reject(new Error('Chrome window closed before Concierge finished. Please keep it open until completion.'));
       });
     });
@@ -804,7 +805,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     removeDialogHandler?.();
     removeTerminationHooks?.();
     if (!effectiveKeepBrowser) {
-      await terminateChrome(chrome);
+      await terminateChrome(chrome, logger);
       if (manualLogin) {
         const shouldCleanup = await shouldCleanupManualLoginProfileState(
           userDataDir,

@@ -7,7 +7,8 @@ import { promisify } from 'node:util';
 import CDP from 'chrome-remote-interface';
 import { launch, Launcher, type LaunchedChrome } from 'chrome-launcher';
 import type { BrowserLogger, ResolvedBrowserConfig, ChromeClient } from './types.js';
-import { cleanupStaleProfileState } from './profileState.js';
+import { cleanupStaleProfileState, isProcessAlive } from './profileState.js';
+import { delay } from './utils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -38,11 +39,43 @@ export async function launchChrome(config: ResolvedBrowserConfig, userDataDir: s
   return Object.assign(launcher, { host: connectHost ?? '127.0.0.1' }) as LaunchedChrome & { host?: string };
 }
 
-export async function terminateChrome(chrome: LaunchedChrome): Promise<void> {
+export async function terminateChrome(chrome: LaunchedChrome, logger?: BrowserLogger): Promise<void> {
+  const logVerbose = (message: string) => {
+    if (logger?.verbose) {
+      logger(message);
+    }
+  };
   try {
     await chrome.kill();
-  } catch {
-    // ignore kill failures
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logVerbose(`Failed to terminate Chrome via launcher: ${message}`);
+  }
+
+  const processHandle = chrome.process;
+  const pid = processHandle?.pid ?? chrome.pid;
+  if (!processHandle || !pid || pid === process.pid) {
+    return;
+  }
+  if (!isProcessAlive(pid)) {
+    return;
+  }
+  try {
+    process.kill(pid, 'SIGTERM');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logVerbose(`Failed to SIGTERM Chrome pid ${pid}: ${message}`);
+    return;
+  }
+  await delay(250);
+  if (!isProcessAlive(pid)) {
+    return;
+  }
+  try {
+    process.kill(pid, 'SIGKILL');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logVerbose(`Failed to SIGKILL Chrome pid ${pid}: ${message}`);
   }
 }
 
@@ -83,7 +116,7 @@ export function registerTerminationHooks(
           logger('Session still in flight; reattach with "concierge session <slug>" to continue.');
         }
       } else {
-        await terminateChrome(chrome);
+        await terminateChrome(chrome, logger);
         if (opts?.preserveUserDataDir) {
           // Preserve the profile directory (manual login), but clear reattach hints so we don't
           // try to reuse a dead DevTools port on the next run.
