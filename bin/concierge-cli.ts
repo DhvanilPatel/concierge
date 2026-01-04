@@ -63,6 +63,7 @@ interface CliOptions extends OptionValues {
   prompt?: string;
   message?: string;
   file?: string[];
+  image?: string[];
   include?: string[];
   files?: string[];
   path?: string[];
@@ -182,6 +183,12 @@ program
   .option(
     '-f, --file <paths...>',
     'Files/directories or glob patterns to attach (prefix with !pattern to exclude). Files larger than 1 MB are rejected automatically.',
+    collectPaths,
+    [],
+  )
+  .option(
+    '--image <paths...>',
+    'Reference image(s) for ChatGPT Images (adds to attachments).',
     collectPaths,
     [],
   )
@@ -568,6 +575,10 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     options.path,
     options.paths,
   );
+  const imageInputs = collectPaths(options.image, []);
+  if (imageInputs.length > 0) {
+    mergedFileInputs.push(...imageInputs);
+  }
   if (mergedFileInputs.length > 0) {
     const { deduped, duplicates } = dedupePathInputs(mergedFileInputs, { cwd: process.cwd() });
     if (duplicates.length > 0) {

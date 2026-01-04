@@ -38,6 +38,9 @@ Run this whenever you touch ChatGPT image generation or image download handling.
 1. Generate an image:
    `pnpm run concierge -- --model gpt-5.2-pro --prompt "a neon cyberpunk otter, cinematic lighting" --generate-image /tmp/chatgpt-gen.png --wait --verbose`
    - Confirm the output file exists and is a real image (`file /tmp/chatgpt-gen.png`).
+2. Reference image:
+   `pnpm run concierge -- --model gpt-5.2-pro --prompt "make it look like a tropical island" --image /tmp/chatgpt-gen.png --generate-image /tmp/chatgpt-ref.png --wait --verbose`
+   - Confirm `/tmp/chatgpt-ref.png` exists.
 
 ### ChatGPT automation (manual exploration)
 

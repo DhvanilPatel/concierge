@@ -45,6 +45,16 @@ concierge \
   --generate-image /tmp/chatgpt-gen.png --wait --verbose
 ```
 
+Reference images are supported via `--image`:
+
+```bash
+concierge \
+  --model gpt-5.2-pro \
+  --prompt "make it feel tropical, golden hour lighting" \
+  --image ./reference.png \
+  --generate-image /tmp/chatgpt-ref.png --wait --verbose
+```
+
 Notes:
 - Requires a signed-in ChatGPT session (cookie sync/manual login).
 - The model picker is skipped on the Images page, since it doesn’t expose GPT model selectors.
@@ -78,6 +88,7 @@ Notes:
 - `--browser-inline-files`: alias for `--browser-attachments never` (forces inline paste; never uploads attachments).
 - `--browser-bundle-files`: bundle all resolved attachments into a single temp file before uploading (only used when uploads are enabled/selected).
 - `--generate-image <file>`: generate an image and save it to a local file. For GPT models, Concierge uses ChatGPT Images; for Gemini models it uses Gemini web.
+- `--image <file>`: reference image(s) for ChatGPT Images (adds to attachments).
 - sqlite bindings: automatic rebuilds now require `CONCIERGE_ALLOW_SQLITE_REBUILD=1`. Without it, the CLI logs instructions instead of running `pnpm rebuild` on your behalf.
 - `--model`: ChatGPT automation supports **GPT-5.2** variants (Auto/Thinking/Instant/Pro). Use `gpt-5.2`, `gpt-5.2-thinking`, `gpt-5.2-instant`, or `gpt-5.2-pro`. Gemini web runs use `gemini-3-pro` (or another `gemini-*` label).
 - Cookie sync is mandatory—if we can’t copy cookies from Chrome, the run exits early. Use the hidden `--browser-allow-cookie-errors` flag only when you’re intentionally running logged out (it skips the early exit but still warns).

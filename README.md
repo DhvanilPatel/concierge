@@ -43,6 +43,9 @@ concierge --dry-run summary -p "Check release notes" --file docs/release-notes.m
 # ChatGPT Images (browser automation)
 concierge --model gpt-5.2-pro --prompt "a neon cyberpunk otter, cinematic lighting" --generate-image out.png
 
+# ChatGPT Images with a reference image
+concierge --model gpt-5.2-pro --prompt "make it look like a tropical island" --image ./ref.png --generate-image out.png
+
 # Gemini web mode (cookies from gemini.google.com)
 concierge --model gemini-3-pro --prompt "a cute robot holding a banana" --generate-image out.jpg --aspect 1:1
 

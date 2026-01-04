@@ -377,7 +377,8 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     };
     await captureRuntimeSnapshot();
     const modelStrategy = config.modelStrategy ?? DEFAULT_MODEL_STRATEGY;
-    const skipModelSelection = wantsImageOutput && isChatGptImagesUrl(config.url);
+    const imageMode = wantsImageOutput && isChatGptImagesUrl(config.url);
+    const skipModelSelection = imageMode;
     if (config.desiredModel && modelStrategy !== 'ignore' && !skipModelSelection) {
       await raceWithDisconnect(
         withRetries(
@@ -493,6 +494,8 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
           logger('Attachment confirmation timed out; skipping user-turn attachment verification.');
         } else if (inputOnlyAttachments) {
           logger('Attachment UI did not render before send; skipping user-turn attachment verification.');
+        } else if (imageMode) {
+          logger('Image mode: skipping user-turn attachment verification.');
         } else {
           const verified = await waitForUserTurnAttachments(Runtime, attachmentNames, 20_000, logger);
           if (!verified) {
@@ -532,7 +535,6 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     }
     stopThinkingMonitor = startThinkingStatusMonitor(Runtime, logger, options.verbose ?? false);
     const responseTimeoutMs = config.timeoutMs;
-    const imageMode = wantsImageOutput && isChatGptImagesUrl(config.url);
     if (!imageMode) {
       // Helper to normalize text for echo detection (collapse whitespace, lowercase)
       const normalizeForComparison = (text: string): string =>
@@ -1049,7 +1051,8 @@ async function runRemoteBrowserMode(
     }
 
     const modelStrategy = config.modelStrategy ?? DEFAULT_MODEL_STRATEGY;
-    const skipModelSelection = wantsImageOutput && isChatGptImagesUrl(config.url);
+    const imageMode = wantsImageOutput && isChatGptImagesUrl(config.url);
+    const skipModelSelection = imageMode;
     if (config.desiredModel && modelStrategy !== 'ignore' && !skipModelSelection) {
       await withRetries(
         () => ensureModelSelection(Runtime, config.desiredModel as string, logger, modelStrategy),
@@ -1150,7 +1153,6 @@ async function runRemoteBrowserMode(
     }
     stopThinkingMonitor = startThinkingStatusMonitor(Runtime, logger, options.verbose ?? false);
     const responseTimeoutMs = config.timeoutMs;
-    const imageMode = wantsImageOutput && isChatGptImagesUrl(config.url);
     if (!imageMode) {
       // Helper to normalize text for echo detection (collapse whitespace, lowercase)
       const normalizeForComparison = (text: string): string =>
