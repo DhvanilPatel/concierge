@@ -13,7 +13,7 @@ import { sessionStore, pruneOldSessions } from '../src/sessionStore.js';
 import { DEFAULT_MODEL, MODEL_CONFIGS, readFiles } from '../src/concierge.js';
 import { isKnownModel } from '../src/concierge/modelResolver.js';
 import type { ModelName, RunConciergeOptions } from '../src/concierge.js';
-import { CHATGPT_URL } from '../src/browserMode.js';
+import { CHATGPT_URL, CHATGPT_IMAGES_URL } from '../src/browserMode.js';
 import { createRemoteBrowserExecutor } from '../src/remote/client.js';
 import { createGeminiWebExecutor } from '../src/gemini-web/index.js';
 import { applyHelpStyling } from '../src/cli/help.js';
@@ -108,6 +108,12 @@ interface CliOptions extends OptionValues {
   browserDebugPort?: number;
   remoteHost?: string;
   remoteToken?: string;
+  youtube?: string;
+  generateImage?: string;
+  editImage?: string;
+  output?: string;
+  aspect?: string;
+  geminiShowThoughts?: boolean;
   copyMarkdown?: boolean;
   copy?: boolean;
   verbose?: boolean;
@@ -343,7 +349,7 @@ program
   .addOption(
     new Option(
       '--generate-image <file>',
-      'Generate image and save to file (Gemini web/cookie mode only; requires gemini.google.com Chrome cookies).',
+      'Generate image and save to file (ChatGPT Images for GPT models; Gemini web for Gemini models).',
     ),
   )
   .addOption(new Option('--edit-image <file>', 'Edit existing image (use with --output, Gemini web/cookie mode only).'))
@@ -492,6 +498,7 @@ function buildRunOptions(options: ResolvedCliOptions, overrides: Partial<RunConc
     browserBundleFiles: overrides.browserBundleFiles ?? options.browserBundleFiles ?? false,
     renderPlain: overrides.renderPlain ?? options.renderPlain ?? false,
     writeOutputPath: overrides.writeOutputPath ?? options.writeOutputPath,
+    generateImage: overrides.generateImage ?? options.generateImage,
   };
 }
 
@@ -519,6 +526,7 @@ function buildRunOptionsFromMetadata(metadata: SessionMetadata): RunConciergeOpt
     browserBundleFiles: stored.browserBundleFiles,
     renderPlain: stored.renderPlain,
     writeOutputPath: stored.writeOutputPath,
+    generateImage: stored.generateImage,
   };
 }
 
@@ -767,6 +775,10 @@ async function runRootCommand(options: CliOptions): Promise<void> {
   });
 
   const sessionMode: SessionMode = 'browser';
+  const hasChatGptUrlOverride = Boolean(options.chatgptUrl || options.browserUrl);
+  if (options.generateImage && resolvedModel.startsWith('gpt-') && !hasChatGptUrlOverride) {
+    options.chatgptUrl = CHATGPT_IMAGES_URL;
+  }
   const browserModelLabelOverride = resolveBrowserModelLabel(cliModelArg, resolvedModel);
   const browserConfig = await buildBrowserConfig({
     ...options,

@@ -99,6 +99,7 @@ export interface StoredRunOptions {
   effectiveModelId?: string;
   renderPlain?: boolean;
   writeOutputPath?: string;
+  generateImage?: string;
 }
 
 export interface SessionMetadata {

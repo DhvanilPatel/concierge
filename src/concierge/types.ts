@@ -89,6 +89,8 @@ export interface RunConciergeOptions {
   renderPlain?: boolean;
   /** Optional absolute path to save only the assistant's final text output. */
   writeOutputPath?: string;
+  /** Optional output path for image generation (ChatGPT images or Gemini web). */
+  generateImage?: string;
 }
 
 export type TransportFailureReason =

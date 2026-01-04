@@ -96,6 +96,7 @@ export async function runBrowserSessionExecution(
       log: automationLogger,
       heartbeatIntervalMs: runOptions.heartbeatIntervalMs,
       verbose: runOptions.verbose,
+      imageOutputPath: runOptions.generateImage,
       runtimeHintCb: async (runtime) => {
         await persistRuntimeHint({ ...runtime, controllerPid: runtime.controllerPid ?? process.pid });
       },

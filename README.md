@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License"></a>
 </p>
 
-Concierge bundles your prompt and files so another AI can answer with real context. It drives ChatGPT in your browser (GPT‑5.2 variants) and can optionally use the Gemini web client for image work. No API keys required; use `--copy` for manual paste or `--render` to preview the bundle before you run.
+Concierge bundles your prompt and files so another AI can answer with real context. It drives ChatGPT in your browser (GPT‑5.2 variants), including ChatGPT Images for `--generate-image`, and can optionally use the Gemini web client for image work. No API keys required; use `--copy` for manual paste or `--render` to preview the bundle before you run.
 
 ## Quick start
 
@@ -39,6 +39,9 @@ concierge --model gpt-5.2-thinking -p "Summarize this diff" --file "src/**/*.ts"
 
 # Preview without launching Chrome
 concierge --dry-run summary -p "Check release notes" --file docs/release-notes.md
+
+# ChatGPT Images (browser automation)
+concierge --model gpt-5.2-pro --prompt "a neon cyberpunk otter, cinematic lighting" --generate-image out.png
 
 # Gemini web mode (cookies from gemini.google.com)
 concierge --model gemini-3-pro --prompt "a cute robot holding a banana" --generate-image out.jpg --aspect 1:1
@@ -69,7 +72,7 @@ Environment variables:
 
 - **Browser-only**: API clients and multi-model runs have been removed for a smaller, clearer CLI
 - **Improved browser cleanup** (in progress): Better process supervision, session state management
-- **Multi-modal support** (planned): Image, video, and audio generation through browser automation
+- **Multi-modal support** (in progress): Image generation via ChatGPT Images / Gemini web; video and audio are planned
 
 ## License
 

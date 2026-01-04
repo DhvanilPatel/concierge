@@ -21,6 +21,7 @@ export function createRemoteBrowserExecutor({ host, token }: RemoteExecutorOptio
       options: {
         heartbeatIntervalMs: options.heartbeatIntervalMs,
         verbose: options.verbose,
+        imageOutputPath: options.imageOutputPath,
       },
     };
 

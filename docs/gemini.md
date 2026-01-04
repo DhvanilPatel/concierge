@@ -1,6 +1,6 @@
 # Gemini Web Integration
 
-Concierge supports Gemini through a cookie-based client for `gemini.google.com`. This path does **not** use API keys and does **not** drive ChatGPT.
+Concierge supports Gemini through a cookie-based client for `gemini.google.com`. This path does **not** use API keys and does **not** drive ChatGPT. For ChatGPT Images (via `--generate-image` with GPT models), see `docs/browser-mode.md`.
 
 ## Usage (Gemini web / cookies)
 

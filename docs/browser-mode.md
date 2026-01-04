@@ -34,6 +34,22 @@ concierge \
 
 You can pass the same payload inline (`--browser-inline-cookies '<json or base64>'`) or via env (`CONCIERGE_BROWSER_COOKIES_JSON`, `CONCIERGE_BROWSER_COOKIES_FILE`). Cloudflare cookies (`cf_clearance`, `__cf_bm`, etc.) are only needed when you hit a challenge.
 
+## ChatGPT Images (browser automation)
+
+Use `--generate-image <file>` with GPT models to target ChatGPT's Images page. Concierge saves the first generated image to the provided path and appends a summary line to the output.
+
+```bash
+concierge \
+  --model gpt-5.2-pro \
+  --prompt "a neon cyberpunk otter, cinematic lighting" \
+  --generate-image /tmp/chatgpt-gen.png --wait --verbose
+```
+
+Notes:
+- Requires a signed-in ChatGPT session (cookie sync/manual login).
+- The model picker is skipped on the Images page, since it doesn’t expose GPT model selectors.
+- If you pass `--chatgpt-url`, Concierge will respect your override and won’t auto-route to the Images page.
+
 ## Current Pipeline
 
 1. **Prompt assembly** – we reuse the normal prompt builder (`buildPrompt`) and the markdown renderer. Browser mode pastes the system + user text (no special markers) into the ChatGPT composer and, by default, pastes resolved file contents inline until the total pasted content reaches ~60k characters (then switches to uploads).
@@ -61,6 +77,7 @@ You can pass the same payload inline (`--browser-inline-cookies '<json or base64
 - `--browser-attachments <auto|never|always>`: control how `--file` inputs are delivered in browser mode. Default `auto` pastes file contents inline up to ~60k characters and switches to uploads above that.
 - `--browser-inline-files`: alias for `--browser-attachments never` (forces inline paste; never uploads attachments).
 - `--browser-bundle-files`: bundle all resolved attachments into a single temp file before uploading (only used when uploads are enabled/selected).
+- `--generate-image <file>`: generate an image and save it to a local file. For GPT models, Concierge uses ChatGPT Images; for Gemini models it uses Gemini web.
 - sqlite bindings: automatic rebuilds now require `CONCIERGE_ALLOW_SQLITE_REBUILD=1`. Without it, the CLI logs instructions instead of running `pnpm rebuild` on your behalf.
 - `--model`: ChatGPT automation supports **GPT-5.2** variants (Auto/Thinking/Instant/Pro). Use `gpt-5.2`, `gpt-5.2-thinking`, `gpt-5.2-instant`, or `gpt-5.2-pro`. Gemini web runs use `gemini-3-pro` (or another `gemini-*` label).
 - Cookie sync is mandatory—if we can’t copy cookies from Chrome, the run exits early. Use the hidden `--browser-allow-cookie-errors` flag only when you’re intentionally running logged out (it skips the early exit but still warns).

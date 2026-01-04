@@ -31,6 +31,14 @@ Prereqs:
    `pnpm run concierge -- --model gemini-3-pro --prompt "add sunglasses" --edit-image /tmp/gemini-gen.jpg --output /tmp/gemini-edit.jpg --wait --verbose`
    - Confirm `/tmp/gemini-edit.jpg` exists.
 
+### ChatGPT Images (browser automation)
+
+Run this whenever you touch ChatGPT image generation or image download handling.
+
+1. Generate an image:
+   `pnpm run concierge -- --model gpt-5.2-pro --prompt "a neon cyberpunk otter, cinematic lighting" --generate-image /tmp/chatgpt-gen.png --wait --verbose`
+   - Confirm the output file exists and is a real image (`file /tmp/chatgpt-gen.png`).
+
 ### ChatGPT automation (manual exploration)
 
 Before running any agent-driven debugging, you can rely on the TypeScript CLI in `scripts/browser-tools.ts`:

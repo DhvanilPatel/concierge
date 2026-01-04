@@ -1,4 +1,4 @@
-import { mkdtemp, rm, mkdir } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import net from 'node:net';
@@ -34,9 +34,10 @@ import {
 } from './pageActions.js';
 import { uploadAttachmentViaDataTransfer } from './actions/remoteFileTransfer.js';
 import { ensureThinkingTime } from './actions/thinkingTime.js';
+import { waitForAssistantImages } from './actions/assistantImages.js';
 import { estimateTokenCount, withRetries, delay } from './utils.js';
 import { formatElapsed } from '../concierge/format.js';
-import { CHATGPT_URL, CONVERSATION_TURN_SELECTOR, DEFAULT_MODEL_STRATEGY } from './constants.js';
+import { CHATGPT_URL, CHATGPT_IMAGES_URL, CONVERSATION_TURN_SELECTOR, COOKIE_URLS, DEFAULT_MODEL_STRATEGY } from './constants.js';
 import type { LaunchedChrome } from 'chrome-launcher';
 import { BrowserAutomationError } from '../concierge/errors.js';
 import { alignPromptEchoPair, buildPromptEchoMatcher } from './reattachHelpers.js';
@@ -52,7 +53,7 @@ import {
 } from './profileState.js';
 
 export type { BrowserAutomationConfig, BrowserRunOptions, BrowserRunResult } from './types.js';
-export { CHATGPT_URL, DEFAULT_MODEL_STRATEGY, DEFAULT_MODEL_TARGET } from './constants.js';
+export { CHATGPT_URL, CHATGPT_IMAGES_URL, DEFAULT_MODEL_STRATEGY, DEFAULT_MODEL_TARGET } from './constants.js';
 export { parseDuration, delay, normalizeChatgptUrl, isTemporaryChatUrl } from './utils.js';
 
 export async function runBrowserMode(options: BrowserRunOptions): Promise<BrowserRunResult> {
@@ -63,6 +64,8 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
 
   const attachments: BrowserAttachment[] = options.attachments ?? [];
   const fallbackSubmission = options.fallbackSubmission;
+  const imageOutputPath = resolveInvocationPath(options.imageOutputPath);
+  const wantsImageOutput = Boolean(imageOutputPath);
 
   let config = resolveBrowserConfig(options.config);
   const logger: BrowserLogger = options.log ?? ((_message: string) => {});
@@ -374,7 +377,8 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     };
     await captureRuntimeSnapshot();
     const modelStrategy = config.modelStrategy ?? DEFAULT_MODEL_STRATEGY;
-    if (config.desiredModel && modelStrategy !== 'ignore') {
+    const skipModelSelection = wantsImageOutput && isChatGptImagesUrl(config.url);
+    if (config.desiredModel && modelStrategy !== 'ignore' && !skipModelSelection) {
       await raceWithDisconnect(
         withRetries(
           () => ensureModelSelection(Runtime, config.desiredModel as string, logger, modelStrategy),
@@ -400,6 +404,8 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       });
       await raceWithDisconnect(ensurePromptReady(Runtime, config.inputTimeoutMs, logger));
       logger(`Prompt textarea ready (after model switch, ${promptText.length.toLocaleString()} chars queued)`);
+    } else if (skipModelSelection) {
+      logger('Model picker: skipped (image generation mode)');
     } else if (modelStrategy === 'ignore') {
       logger('Model picker: skipped (strategy=ignore)');
     }
@@ -525,175 +531,209 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       }
     }
     stopThinkingMonitor = startThinkingStatusMonitor(Runtime, logger, options.verbose ?? false);
-    // Helper to normalize text for echo detection (collapse whitespace, lowercase)
-    const normalizeForComparison = (text: string): string =>
-      text.toLowerCase().replace(/\s+/g, ' ').trim();
-    const waitForFreshAssistantResponse = async (baselineNormalized: string, timeoutMs: number) => {
-      const baselinePrefix =
-        baselineNormalized.length >= 80
-          ? baselineNormalized.slice(0, Math.min(200, baselineNormalized.length))
-          : '';
-      const deadline = Date.now() + timeoutMs;
-      while (Date.now() < deadline) {
-        const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
-        const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
-        if (text) {
-          const normalized = normalizeForComparison(text);
-          const isBaseline =
-            normalized === baselineNormalized || (baselinePrefix.length > 0 && normalized.startsWith(baselinePrefix));
-          if (!isBaseline) {
-            return {
-              text,
-              html: snapshot?.html ?? undefined,
-              meta: { turnId: snapshot?.turnId ?? undefined, messageId: snapshot?.messageId ?? undefined },
-            };
-          }
-        }
-        await delay(350);
-      }
-      return null;
-    };
-    let answer = await raceWithDisconnect(
-      waitForAssistantResponseWithReload(
-        Runtime,
-        Page,
-        config.timeoutMs,
-        logger,
-        baselineTurns ?? undefined,
-      ),
-    );
-    // Ensure we store the final conversation URL even if the UI updated late.
-    await updateConversationHint('post-response', 15_000);
-    const baselineNormalized = baselineAssistantText ? normalizeForComparison(baselineAssistantText) : '';
-    if (baselineNormalized) {
-      const normalizedAnswer = normalizeForComparison(answer.text ?? '');
-      const baselinePrefix =
-        baselineNormalized.length >= 80
-          ? baselineNormalized.slice(0, Math.min(200, baselineNormalized.length))
-          : '';
-      const isBaseline =
-        normalizedAnswer === baselineNormalized ||
-        (baselinePrefix.length > 0 && normalizedAnswer.startsWith(baselinePrefix));
-      if (isBaseline) {
-        logger('Detected stale assistant response; waiting for new response...');
-        const refreshed = await waitForFreshAssistantResponse(baselineNormalized, 15_000);
-        if (refreshed) {
-          answer = refreshed;
-        }
-      }
-    }
-    answerText = answer.text;
-    answerHtml = answer.html ?? '';
-    const copiedMarkdown = await raceWithDisconnect(
-      withRetries(
-        async () => {
-          const attempt = await captureAssistantMarkdown(Runtime, answer.meta, logger);
-          if (!attempt) {
-            throw new Error('copy-missing');
-          }
-          return attempt;
-        },
-        {
-          retries: 2,
-          delayMs: 350,
-          onRetry: (attempt, error) => {
-            if (options.verbose) {
-              logger(
-                `[retry] Markdown capture attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
-              );
+    const responseTimeoutMs = config.timeoutMs;
+    const imageMode = wantsImageOutput && isChatGptImagesUrl(config.url);
+    if (!imageMode) {
+      // Helper to normalize text for echo detection (collapse whitespace, lowercase)
+      const normalizeForComparison = (text: string): string =>
+        text.toLowerCase().replace(/\s+/g, ' ').trim();
+      const waitForFreshAssistantResponse = async (baselineNormalized: string, timeoutMs: number) => {
+        const baselinePrefix =
+          baselineNormalized.length >= 80
+            ? baselineNormalized.slice(0, Math.min(200, baselineNormalized.length))
+            : '';
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+          const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
+          const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
+          if (text) {
+            const normalized = normalizeForComparison(text);
+            const isBaseline =
+              normalized === baselineNormalized || (baselinePrefix.length > 0 && normalized.startsWith(baselinePrefix));
+            if (!isBaseline) {
+              return {
+                text,
+                html: snapshot?.html ?? undefined,
+                meta: { turnId: snapshot?.turnId ?? undefined, messageId: snapshot?.messageId ?? undefined },
+              };
             }
-          },
-        },
-      ),
-    ).catch(() => null);
-    answerMarkdown = copiedMarkdown ?? answerText;
-
-    const promptEchoMatcher = buildPromptEchoMatcher(promptText);
-
-    // Final sanity check: ensure we didn't accidentally capture the user prompt instead of the assistant turn.
-    const finalSnapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
-    const finalText = typeof finalSnapshot?.text === 'string' ? finalSnapshot.text.trim() : '';
-    if (finalText && finalText !== promptText.trim()) {
-      const trimmedMarkdown = answerMarkdown.trim();
-      const finalIsEcho = promptEchoMatcher ? promptEchoMatcher.isEcho(finalText) : false;
-      const lengthDelta = finalText.length - trimmedMarkdown.length;
-      const missingCopy = !copiedMarkdown && lengthDelta >= 0;
-      const likelyTruncatedCopy =
-        copiedMarkdown &&
-        trimmedMarkdown.length > 0 &&
-        lengthDelta >= Math.max(12, Math.floor(trimmedMarkdown.length * 0.75));
-      if ((missingCopy || likelyTruncatedCopy) && !finalIsEcho && finalText !== trimmedMarkdown) {
-        logger('Refreshed assistant response via final DOM snapshot');
-        answerText = finalText;
-        answerMarkdown = finalText;
-      }
-    }
-
-    // Detect prompt echo using normalized comparison (whitespace-insensitive).
-    const alignedEcho = alignPromptEchoPair(
-      answerText,
-      answerMarkdown,
-      promptEchoMatcher,
-      copiedMarkdown ? logger : undefined,
-      {
-        text: 'Aligned assistant response text to copied markdown after prompt echo',
-        markdown: 'Aligned assistant markdown to response text after prompt echo',
-      },
-    );
-    answerText = alignedEcho.answerText;
-    answerMarkdown = alignedEcho.answerMarkdown;
-    const isPromptEcho = alignedEcho.isEcho;
-    if (isPromptEcho) {
-      logger('Detected prompt echo in response; waiting for actual assistant response...');
-      const deadline = Date.now() + 15_000;
-      let bestText: string | null = null;
-      let stableCount = 0;
-      while (Date.now() < deadline) {
-        const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
-        const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
-        const isStillEcho = !text || Boolean(promptEchoMatcher?.isEcho(text));
-        if (!isStillEcho) {
-          if (!bestText || text.length > bestText.length) {
-            bestText = text;
-            stableCount = 0;
-          } else if (text === bestText) {
-            stableCount += 1;
           }
-          if (stableCount >= 2) {
+          await delay(350);
+        }
+        return null;
+      };
+      const textTimeoutMs = responseTimeoutMs;
+      let answer: { text: string; html?: string; meta: { turnId?: string | null; messageId?: string | null } };
+      try {
+        answer = await raceWithDisconnect(
+          waitForAssistantResponseWithReload(
+            Runtime,
+            Page,
+            textTimeoutMs,
+            logger,
+            baselineTurns ?? undefined,
+          ),
+        );
+      } catch (error) {
+        if (connectionClosedUnexpectedly || !shouldReloadAfterAssistantError(error)) {
+          throw error;
+        }
+        logger('Assistant text not captured; continuing with image download.');
+        answer = { text: '', html: undefined, meta: {} };
+      }
+      const baselineNormalized = baselineAssistantText ? normalizeForComparison(baselineAssistantText) : '';
+      if (baselineNormalized) {
+        const normalizedAnswer = normalizeForComparison(answer.text ?? '');
+        const baselinePrefix =
+          baselineNormalized.length >= 80
+            ? baselineNormalized.slice(0, Math.min(200, baselineNormalized.length))
+            : '';
+        const isBaseline =
+          normalizedAnswer === baselineNormalized ||
+          (baselinePrefix.length > 0 && normalizedAnswer.startsWith(baselinePrefix));
+        if (isBaseline) {
+          logger('Detected stale assistant response; waiting for new response...');
+          const refreshed = await waitForFreshAssistantResponse(baselineNormalized, 15_000);
+          if (refreshed) {
+            answer = refreshed;
+          }
+        }
+      }
+      answerText = answer.text;
+      answerHtml = answer.html ?? '';
+      const copiedMarkdown = await raceWithDisconnect(
+        withRetries(
+          async () => {
+            const attempt = await captureAssistantMarkdown(Runtime, answer.meta, logger);
+            if (!attempt) {
+              throw new Error('copy-missing');
+            }
+            return attempt;
+          },
+          {
+            retries: 2,
+            delayMs: 350,
+            onRetry: (attempt, error) => {
+              if (options.verbose) {
+                logger(
+                  `[retry] Markdown capture attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
+                );
+              }
+            },
+          },
+        ),
+      ).catch(() => null);
+      answerMarkdown = copiedMarkdown ?? answerText;
+
+      const promptEchoMatcher = buildPromptEchoMatcher(promptText);
+
+      // Final sanity check: ensure we didn't accidentally capture the user prompt instead of the assistant turn.
+      const finalSnapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
+      const finalText = typeof finalSnapshot?.text === 'string' ? finalSnapshot.text.trim() : '';
+      if (finalText && finalText !== promptText.trim()) {
+        const trimmedMarkdown = answerMarkdown.trim();
+        const finalIsEcho = promptEchoMatcher ? promptEchoMatcher.isEcho(finalText) : false;
+        const lengthDelta = finalText.length - trimmedMarkdown.length;
+        const missingCopy = !copiedMarkdown && lengthDelta >= 0;
+        const likelyTruncatedCopy =
+          copiedMarkdown &&
+          trimmedMarkdown.length > 0 &&
+          lengthDelta >= Math.max(12, Math.floor(trimmedMarkdown.length * 0.75));
+        if ((missingCopy || likelyTruncatedCopy) && !finalIsEcho && finalText !== trimmedMarkdown) {
+          logger('Refreshed assistant response via final DOM snapshot');
+          answerText = finalText;
+          answerMarkdown = finalText;
+        }
+      }
+
+      // Detect prompt echo using normalized comparison (whitespace-insensitive).
+      const alignedEcho = alignPromptEchoPair(
+        answerText,
+        answerMarkdown,
+        promptEchoMatcher,
+        copiedMarkdown ? logger : undefined,
+        {
+          text: 'Aligned assistant response text to copied markdown after prompt echo',
+          markdown: 'Aligned assistant markdown to response text after prompt echo',
+        },
+      );
+      answerText = alignedEcho.answerText;
+      answerMarkdown = alignedEcho.answerMarkdown;
+      const isPromptEcho = alignedEcho.isEcho;
+      if (isPromptEcho) {
+        logger('Detected prompt echo in response; waiting for actual assistant response...');
+        const deadline = Date.now() + 15_000;
+        let bestText: string | null = null;
+        let stableCount = 0;
+        while (Date.now() < deadline) {
+          const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
+          const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
+          const isStillEcho = !text || Boolean(promptEchoMatcher?.isEcho(text));
+          if (!isStillEcho) {
+            if (!bestText || text.length > bestText.length) {
+              bestText = text;
+              stableCount = 0;
+            } else if (text === bestText) {
+              stableCount += 1;
+            }
+            if (stableCount >= 2) {
+              break;
+            }
+          }
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+        if (bestText) {
+          logger('Recovered assistant response after detecting prompt echo');
+          answerText = bestText;
+          answerMarkdown = bestText;
+        }
+      }
+      const minAnswerChars = 16;
+      if (answerText.trim().length > 0 && answerText.trim().length < minAnswerChars) {
+        const deadline = Date.now() + 12_000;
+        let bestText = answerText.trim();
+        let stableCycles = 0;
+        while (Date.now() < deadline) {
+          const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
+          const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
+          if (text && text.length > bestText.length) {
+            bestText = text;
+            stableCycles = 0;
+          } else {
+            stableCycles += 1;
+          }
+          if (stableCycles >= 3 && bestText.length >= minAnswerChars) {
             break;
           }
+          await delay(400);
         }
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        if (bestText.length > answerText.trim().length) {
+          logger('Refreshed short assistant response from latest DOM snapshot');
+          answerText = bestText;
+          answerMarkdown = bestText;
+        }
       }
-      if (bestText) {
-        logger('Recovered assistant response after detecting prompt echo');
-        answerText = bestText;
-        answerMarkdown = bestText;
-      }
+    } else {
+      logger('Image mode: skipping assistant text capture and proceeding to image download.');
     }
-    const minAnswerChars = 16;
-    if (answerText.trim().length > 0 && answerText.trim().length < minAnswerChars) {
-      const deadline = Date.now() + 12_000;
-      let bestText = answerText.trim();
-      let stableCycles = 0;
-      while (Date.now() < deadline) {
-        const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
-        const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
-        if (text && text.length > bestText.length) {
-          bestText = text;
-          stableCycles = 0;
-        } else {
-          stableCycles += 1;
-        }
-        if (stableCycles >= 3 && bestText.length >= minAnswerChars) {
-          break;
-        }
-        await delay(400);
-      }
-      if (bestText.length > answerText.trim().length) {
-        logger('Refreshed short assistant response from latest DOM snapshot');
-        answerText = bestText;
-        answerMarkdown = bestText;
+    // Ensure we store the final conversation URL even if the UI updated late.
+    await updateConversationHint('post-response', 15_000);
+    if (imageOutputPath) {
+      const imageResult = await captureGeneratedImage({
+        Runtime,
+        Network,
+        logger,
+        outputPath: imageOutputPath,
+        timeoutMs: responseTimeoutMs,
+        minTurnIndex: imageMode ? undefined : baselineTurns ?? undefined,
+        referer: config.url,
+      });
+      if (imageResult && imageResult.imageCount > 0) {
+        const notice = `Generated ${imageResult.imageCount} image(s). Saved to: ${imageResult.outputPath}`;
+        answerMarkdown = answerMarkdown
+          ? `${answerMarkdown}\n\n*${notice}*`
+          : `*${notice}*`;
+        answerText = answerText ? `${answerText}\n\n${notice}` : notice;
       }
     }
     if (connectionClosedUnexpectedly) {
@@ -933,6 +973,8 @@ async function runRemoteBrowserMode(
   logger: BrowserLogger,
   options: BrowserRunOptions,
 ): Promise<BrowserRunResult> {
+  const imageOutputPath = resolveInvocationPath(options.imageOutputPath);
+  const wantsImageOutput = Boolean(imageOutputPath);
   const remoteChromeConfig = config.remoteChrome;
   if (!remoteChromeConfig) {
     throw new Error('Remote Chrome configuration missing. Pass --remote-chrome <host:port> to use this mode.');
@@ -1007,7 +1049,8 @@ async function runRemoteBrowserMode(
     }
 
     const modelStrategy = config.modelStrategy ?? DEFAULT_MODEL_STRATEGY;
-    if (config.desiredModel && modelStrategy !== 'ignore') {
+    const skipModelSelection = wantsImageOutput && isChatGptImagesUrl(config.url);
+    if (config.desiredModel && modelStrategy !== 'ignore' && !skipModelSelection) {
       await withRetries(
         () => ensureModelSelection(Runtime, config.desiredModel as string, logger, modelStrategy),
         {
@@ -1022,6 +1065,8 @@ async function runRemoteBrowserMode(
       );
       await ensurePromptReady(Runtime, config.inputTimeoutMs, logger);
       logger(`Prompt textarea ready (after model switch, ${promptText.length.toLocaleString()} chars queued)`);
+    } else if (skipModelSelection) {
+      logger('Model picker: skipped (image generation mode)');
     } else if (modelStrategy === 'ignore') {
       logger('Model picker: skipped (strategy=ignore)');
     }
@@ -1104,140 +1149,173 @@ async function runRemoteBrowserMode(
       }
     }
     stopThinkingMonitor = startThinkingStatusMonitor(Runtime, logger, options.verbose ?? false);
-    // Helper to normalize text for echo detection (collapse whitespace, lowercase)
-    const normalizeForComparison = (text: string): string =>
-      text.toLowerCase().replace(/\s+/g, ' ').trim();
-    const waitForFreshAssistantResponse = async (baselineNormalized: string, timeoutMs: number) => {
-      const baselinePrefix =
-        baselineNormalized.length >= 80
-          ? baselineNormalized.slice(0, Math.min(200, baselineNormalized.length))
-          : '';
-      const deadline = Date.now() + timeoutMs;
-      while (Date.now() < deadline) {
-        const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
-        const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
-        if (text) {
-          const normalized = normalizeForComparison(text);
-          const isBaseline =
-            normalized === baselineNormalized || (baselinePrefix.length > 0 && normalized.startsWith(baselinePrefix));
-          if (!isBaseline) {
-            return {
-              text,
-              html: snapshot?.html ?? undefined,
-              meta: { turnId: snapshot?.turnId ?? undefined, messageId: snapshot?.messageId ?? undefined },
-            };
+    const responseTimeoutMs = config.timeoutMs;
+    const imageMode = wantsImageOutput && isChatGptImagesUrl(config.url);
+    if (!imageMode) {
+      // Helper to normalize text for echo detection (collapse whitespace, lowercase)
+      const normalizeForComparison = (text: string): string =>
+        text.toLowerCase().replace(/\s+/g, ' ').trim();
+      const waitForFreshAssistantResponse = async (baselineNormalized: string, timeoutMs: number) => {
+        const baselinePrefix =
+          baselineNormalized.length >= 80
+            ? baselineNormalized.slice(0, Math.min(200, baselineNormalized.length))
+            : '';
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+          const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
+          const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
+          if (text) {
+            const normalized = normalizeForComparison(text);
+            const isBaseline =
+              normalized === baselineNormalized || (baselinePrefix.length > 0 && normalized.startsWith(baselinePrefix));
+            if (!isBaseline) {
+              return {
+                text,
+                html: snapshot?.html ?? undefined,
+                meta: { turnId: snapshot?.turnId ?? undefined, messageId: snapshot?.messageId ?? undefined },
+              };
+            }
+          }
+          await delay(350);
+        }
+        return null;
+      };
+      let answer: { text: string; html?: string; meta: { turnId?: string | null; messageId?: string | null } };
+      try {
+        answer = await waitForAssistantResponseWithReload(
+          Runtime,
+          Page,
+          responseTimeoutMs,
+          logger,
+          baselineTurns ?? undefined,
+        );
+      } catch (error) {
+        if (connectionClosedUnexpectedly || !shouldReloadAfterAssistantError(error)) {
+          throw error;
+        }
+        logger('Assistant text not captured; continuing with image download.');
+        answer = { text: '', html: undefined, meta: {} };
+      }
+      const baselineNormalized = baselineAssistantText ? normalizeForComparison(baselineAssistantText) : '';
+      if (baselineNormalized) {
+        const normalizedAnswer = normalizeForComparison(answer.text ?? '');
+        const baselinePrefix =
+          baselineNormalized.length >= 80
+            ? baselineNormalized.slice(0, Math.min(200, baselineNormalized.length))
+            : '';
+        const isBaseline =
+          normalizedAnswer === baselineNormalized ||
+          (baselinePrefix.length > 0 && normalizedAnswer.startsWith(baselinePrefix));
+        if (isBaseline) {
+          logger('Detected stale assistant response; waiting for new response...');
+          const refreshed = await waitForFreshAssistantResponse(baselineNormalized, 15_000);
+          if (refreshed) {
+            answer = refreshed;
           }
         }
-        await delay(350);
       }
-      return null;
-    };
-    let answer = await waitForAssistantResponseWithReload(
-      Runtime,
-      Page,
-      config.timeoutMs,
-      logger,
-      baselineTurns ?? undefined,
-    );
-    const baselineNormalized = baselineAssistantText ? normalizeForComparison(baselineAssistantText) : '';
-    if (baselineNormalized) {
-      const normalizedAnswer = normalizeForComparison(answer.text ?? '');
-      const baselinePrefix =
-        baselineNormalized.length >= 80
-          ? baselineNormalized.slice(0, Math.min(200, baselineNormalized.length))
-          : '';
-      const isBaseline =
-        normalizedAnswer === baselineNormalized ||
-        (baselinePrefix.length > 0 && normalizedAnswer.startsWith(baselinePrefix));
-      if (isBaseline) {
-        logger('Detected stale assistant response; waiting for new response...');
-        const refreshed = await waitForFreshAssistantResponse(baselineNormalized, 15_000);
-        if (refreshed) {
-          answer = refreshed;
-        }
-      }
-    }
-    answerText = answer.text;
-    answerHtml = answer.html ?? '';
+      answerText = answer.text;
+      answerHtml = answer.html ?? '';
 
-    const copiedMarkdown = await withRetries(
-      async () => {
-        const attempt = await captureAssistantMarkdown(Runtime, answer.meta, logger);
-        if (!attempt) {
-          throw new Error('copy-missing');
-        }
-        return attempt;
-      },
-      {
-        retries: 2,
-        delayMs: 350,
-        onRetry: (attempt, error) => {
-          if (options.verbose) {
-            logger(
-              `[retry] Markdown capture attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
-            );
+      const copiedMarkdown = await withRetries(
+        async () => {
+          const attempt = await captureAssistantMarkdown(Runtime, answer.meta, logger);
+          if (!attempt) {
+            throw new Error('copy-missing');
           }
+          return attempt;
         },
-      },
-    ).catch(() => null);
+        {
+          retries: 2,
+          delayMs: 350,
+          onRetry: (attempt, error) => {
+            if (options.verbose) {
+              logger(
+                `[retry] Markdown capture attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
+              );
+            }
+          },
+        },
+      ).catch(() => null);
 
-    answerMarkdown = copiedMarkdown ?? answerText;
+      answerMarkdown = copiedMarkdown ?? answerText;
 
-    // Final sanity check: ensure we didn't accidentally capture the user prompt instead of the assistant turn.
-    const finalSnapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
-    const finalText = typeof finalSnapshot?.text === 'string' ? finalSnapshot.text.trim() : '';
-    if (
-      finalText &&
-      finalText !== answerMarkdown.trim() &&
-      finalText !== promptText.trim() &&
-      finalText.length >= answerMarkdown.trim().length
-    ) {
-      logger('Refreshed assistant response via final DOM snapshot');
-      answerText = finalText;
-      answerMarkdown = finalText;
-    }
-
-    // Detect prompt echo using normalized comparison (whitespace-insensitive).
-    const promptEchoMatcher = buildPromptEchoMatcher(promptText);
-    const alignedEcho = alignPromptEchoPair(
-      answerText,
-      answerMarkdown,
-      promptEchoMatcher,
-      copiedMarkdown ? logger : undefined,
-      {
-        text: 'Aligned assistant response text to copied markdown after prompt echo',
-        markdown: 'Aligned assistant markdown to response text after prompt echo',
-      },
-    );
-    answerText = alignedEcho.answerText;
-    answerMarkdown = alignedEcho.answerMarkdown;
-    const isPromptEcho = alignedEcho.isEcho;
-    if (isPromptEcho) {
-      logger('Detected prompt echo in response; waiting for actual assistant response...');
-      const deadline = Date.now() + 15_000;
-      let bestText: string | null = null;
-      let stableCount = 0;
-      while (Date.now() < deadline) {
-        const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
-        const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
-        const isStillEcho = !text || Boolean(promptEchoMatcher?.isEcho(text));
-        if (!isStillEcho) {
-          if (!bestText || text.length > bestText.length) {
-            bestText = text;
-            stableCount = 0;
-          } else if (text === bestText) {
-            stableCount += 1;
-          }
-          if (stableCount >= 2) {
-            break;
-          }
-        }
-        await new Promise((resolve) => setTimeout(resolve, 300));
+      // Final sanity check: ensure we didn't accidentally capture the user prompt instead of the assistant turn.
+      const finalSnapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
+      const finalText = typeof finalSnapshot?.text === 'string' ? finalSnapshot.text.trim() : '';
+      if (
+        finalText &&
+        finalText !== answerMarkdown.trim() &&
+        finalText !== promptText.trim() &&
+        finalText.length >= answerMarkdown.trim().length
+      ) {
+        logger('Refreshed assistant response via final DOM snapshot');
+        answerText = finalText;
+        answerMarkdown = finalText;
       }
-      if (bestText) {
-        logger('Recovered assistant response after detecting prompt echo');
-        answerText = bestText;
-        answerMarkdown = bestText;
+
+      // Detect prompt echo using normalized comparison (whitespace-insensitive).
+      const promptEchoMatcher = buildPromptEchoMatcher(promptText);
+      const alignedEcho = alignPromptEchoPair(
+        answerText,
+        answerMarkdown,
+        promptEchoMatcher,
+        copiedMarkdown ? logger : undefined,
+        {
+          text: 'Aligned assistant response text to copied markdown after prompt echo',
+          markdown: 'Aligned assistant markdown to response text after prompt echo',
+        },
+      );
+      answerText = alignedEcho.answerText;
+      answerMarkdown = alignedEcho.answerMarkdown;
+      const isPromptEcho = alignedEcho.isEcho;
+      if (isPromptEcho) {
+        logger('Detected prompt echo in response; waiting for actual assistant response...');
+        const deadline = Date.now() + 15_000;
+        let bestText: string | null = null;
+        let stableCount = 0;
+        while (Date.now() < deadline) {
+          const snapshot = await readAssistantSnapshot(Runtime, baselineTurns ?? undefined).catch(() => null);
+          const text = typeof snapshot?.text === 'string' ? snapshot.text.trim() : '';
+          const isStillEcho = !text || Boolean(promptEchoMatcher?.isEcho(text));
+          if (!isStillEcho) {
+            if (!bestText || text.length > bestText.length) {
+              bestText = text;
+              stableCount = 0;
+            } else if (text === bestText) {
+              stableCount += 1;
+            }
+            if (stableCount >= 2) {
+              break;
+            }
+          }
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+        if (bestText) {
+          logger('Recovered assistant response after detecting prompt echo');
+          answerText = bestText;
+          answerMarkdown = bestText;
+        }
+      }
+    } else {
+      logger('Image mode: skipping assistant text capture and proceeding to image download.');
+    }
+    if (imageOutputPath) {
+      const imageResult = await captureGeneratedImage({
+        Runtime,
+        Network,
+        logger,
+        outputPath: imageOutputPath,
+        timeoutMs: responseTimeoutMs,
+        minTurnIndex: imageMode ? undefined : baselineTurns ?? undefined,
+        referer: config.url,
+      });
+      if (imageResult && imageResult.imageCount > 0) {
+        const notice = `Generated ${imageResult.imageCount} image(s). Saved to: ${imageResult.outputPath}`;
+        answerMarkdown = answerMarkdown
+          ? `${answerMarkdown}\n\n*${notice}*`
+          : `*${notice}*`;
+        answerText = answerText ? `${answerText}\n\n${notice}` : notice;
       }
     }
     stopThinkingMonitor?.();
@@ -1414,6 +1492,226 @@ async function readConversationTurnCount(
 
 function isConversationUrl(url: string): boolean {
   return /\/c\/[a-z0-9-]+/i.test(url);
+}
+
+function resolveInvocationPath(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return path.isAbsolute(trimmed) ? trimmed : path.resolve(process.cwd(), trimmed);
+}
+
+function isChatGptImagesUrl(url: string | undefined | null): boolean {
+  const value = typeof url === 'string' ? url.toLowerCase() : '';
+  return value.includes('/images');
+}
+
+async function captureGeneratedImage({
+  Runtime,
+  Network,
+  logger,
+  outputPath,
+  timeoutMs,
+  minTurnIndex,
+  referer,
+}: {
+  Runtime: ChromeClient['Runtime'];
+  Network: ChromeClient['Network'];
+  logger: BrowserLogger;
+  outputPath: string;
+  timeoutMs: number;
+  minTurnIndex?: number;
+  referer?: string;
+}): Promise<{ imageCount: number; outputPath: string } | null> {
+  if (!outputPath) return null;
+  const snapshot = await waitForAssistantImages(Runtime, timeoutMs, logger, minTurnIndex);
+  if (!snapshot.urls.length) {
+    throw new Error('No images generated.');
+  }
+  const cookieHeader = await buildCookieHeader(Network, referer, logger);
+  const userAgent = await readUserAgent(Runtime);
+  const pageUrl = await readPageUrl(Runtime);
+  const refererUrl = pageUrl ?? referer ?? CHATGPT_IMAGES_URL ?? CHATGPT_URL;
+  let lastError: Error | null = null;
+  for (const url of snapshot.urls) {
+    try {
+      await downloadChatGptImage({
+        Runtime,
+        url,
+        outputPath,
+        cookieHeader,
+        userAgent,
+        referer: refererUrl,
+      });
+      return { imageCount: snapshot.urls.length, outputPath };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error ?? 'download failed'));
+      if (logger?.verbose) {
+        logger(`[browser] Image download failed; trying next candidate (${lastError.message})`);
+      }
+    }
+  }
+  throw lastError ?? new Error('Failed to download generated image.');
+}
+
+async function readPageUrl(Runtime: ChromeClient['Runtime']): Promise<string | null> {
+  try {
+    const { result } = await Runtime.evaluate({ expression: 'location.href', returnByValue: true });
+    return typeof result?.value === 'string' ? result.value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function readUserAgent(Runtime: ChromeClient['Runtime']): Promise<string | undefined> {
+  try {
+    const { result } = await Runtime.evaluate({ expression: 'navigator.userAgent', returnByValue: true });
+    return typeof result?.value === 'string' ? result.value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function buildCookieHeader(
+  Network: ChromeClient['Network'],
+  referer: string | undefined,
+  logger: BrowserLogger,
+): Promise<string> {
+  const urls = [referer, CHATGPT_URL, ...COOKIE_URLS].filter((value): value is string => Boolean(value));
+  try {
+    const response = await Network.getCookies({ urls });
+    const cookies = response?.cookies ?? [];
+    const parts: string[] = [];
+    const seen = new Set<string>();
+    for (const cookie of cookies) {
+      if (!cookie?.name) continue;
+      const value = cookie.value ?? '';
+      if (!value) continue;
+      const key = `${cookie.domain ?? ''}:${cookie.name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      parts.push(`${cookie.name}=${value}`);
+    }
+    return parts.join('; ');
+  } catch (error) {
+    if (logger?.verbose) {
+      logger(`[browser] Failed to read cookies for image download: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return '';
+  }
+}
+
+async function downloadChatGptImage({
+  Runtime,
+  url,
+  outputPath,
+  cookieHeader,
+  userAgent,
+  referer,
+}: {
+  Runtime: ChromeClient['Runtime'];
+  url: string;
+  outputPath: string;
+  cookieHeader: string;
+  userAgent?: string;
+  referer?: string;
+}): Promise<void> {
+  if (url.startsWith('data:')) {
+    const data = decodeDataUrl(url);
+    await mkdir(path.dirname(outputPath), { recursive: true });
+    await writeFile(outputPath, data);
+    return;
+  }
+  if (url.startsWith('blob:')) {
+    const resolved = await resolveBlobToDataUrl(Runtime, url);
+    if (!resolved) {
+      throw new Error('Unable to resolve blob image');
+    }
+    return downloadChatGptImage({
+      Runtime,
+      url: resolved,
+      outputPath,
+      cookieHeader,
+      userAgent,
+      referer,
+    });
+  }
+  let targetUrl = url;
+  if (!/^https?:/i.test(targetUrl)) {
+    try {
+      targetUrl = new URL(targetUrl, referer ?? CHATGPT_URL).toString();
+    } catch {
+      // fall back to original value
+    }
+  }
+  const headers: Record<string, string> = {};
+  if (cookieHeader) {
+    headers.cookie = cookieHeader;
+  }
+  if (userAgent) {
+    headers['user-agent'] = userAgent;
+  }
+  if (referer) {
+    headers.referer = referer;
+  }
+  const res = await fetchWithCookiePreservingRedirects(targetUrl, { headers });
+  if (!res.ok) {
+    throw new Error(`Failed to download image: ${res.status} ${res.statusText}`);
+  }
+  const data = new Uint8Array(await res.arrayBuffer());
+  await mkdir(path.dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, data);
+}
+
+function decodeDataUrl(url: string): Uint8Array {
+  const match = /^data:([^;,]*)(;base64)?,(.*)$/s.exec(url);
+  if (!match) {
+    throw new Error('Invalid data URL');
+  }
+  const isBase64 = Boolean(match[2]);
+  const data = match[3] ?? '';
+  if (isBase64) {
+    return new Uint8Array(Buffer.from(data, 'base64'));
+  }
+  const decoded = decodeURIComponent(data);
+  return new Uint8Array(Buffer.from(decoded, 'utf8'));
+}
+
+async function resolveBlobToDataUrl(Runtime: ChromeClient['Runtime'], url: string): Promise<string | null> {
+  const expression = `(() => {
+    const blobUrl = ${JSON.stringify(url)};
+    const toDataUrl = (blob) => new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+    return fetch(blobUrl)
+      .then((res) => res.blob())
+      .then((blob) => toDataUrl(blob))
+      .catch(() => null);
+  })()`;
+  const { result } = await Runtime.evaluate({ expression, returnByValue: true, awaitPromise: true });
+  return typeof result?.value === 'string' ? result.value : null;
+}
+
+async function fetchWithCookiePreservingRedirects(
+  url: string,
+  init: Omit<RequestInit, 'redirect'>,
+  maxRedirects = 10,
+): Promise<Response> {
+  let current = url;
+  for (let i = 0; i <= maxRedirects; i += 1) {
+    const res = await fetch(current, { ...init, redirect: 'manual' });
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (!location) return res;
+      current = new URL(location, current).toString();
+      continue;
+    }
+    return res;
+  }
+  throw new Error(`Too many redirects while downloading image (>${maxRedirects}).`);
 }
 
 function startThinkingStatusMonitor(

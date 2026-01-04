@@ -189,6 +189,7 @@ export async function createRemoteServer(
         log: automationLogger,
         heartbeatIntervalMs: payload.options.heartbeatIntervalMs,
         verbose: payload.options.verbose,
+        imageOutputPath: payload.options.imageOutputPath,
       });
 
       sendEvent({ type: 'result', result: sanitizeResult(result) });
