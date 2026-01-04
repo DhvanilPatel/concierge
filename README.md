@@ -1,5 +1,7 @@
 # concierge 🛎️ — Your AI concierge for the best models
 
+> **Fork notice:** This is a fork of [@steipete/oracle](https://github.com/steipete/oracle) by Peter Steinberger. I’m grateful for the original work; this fork exists to experiment, simplify, and make the CLI more compact. If you want the canonical upstream, please use the original repo.
+
 <p align="center">
   <img src="./README-header.png" alt="Concierge CLI header banner" width="1100">
 </p>
