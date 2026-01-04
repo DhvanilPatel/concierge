@@ -5,12 +5,6 @@ import { fileURLToPath } from 'node:url';
 import { once } from 'node:events';
 import { Command, Option } from 'commander';
 import type { OptionValues } from 'commander';
-// Allow `npx @steipete/oracle oracle-mcp` to resolve the MCP server even though npx runs the default binary.
-if (process.argv[2] === 'oracle-mcp') {
-  const { startMcpServer } = await import('../src/mcp/server.js');
-  await startMcpServer();
-  process.exit(0);
-}
 import { resolveEngine, type EngineMode, defaultWaitPreference } from '../src/cli/engine.js';
 import { shouldRequirePrompt } from '../src/cli/promptRequirement.js';
 import chalk from 'chalk';
