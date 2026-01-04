@@ -1353,6 +1353,14 @@ export async function waitForAttachmentCompletion(
       '[aria-label*="Remove"]',
       'button[aria-label*="Remove"]',
     ];
+    const removeSelectors = [
+      '[aria-label="Remove file"]',
+      'button[aria-label="Remove file"]',
+      '[aria-label*="Remove file"]',
+      '[aria-label*="remove file"]',
+      '[data-testid*="remove-attachment"]',
+      '[data-testid*="attachment-remove"]',
+    ];
     const attachedNames = [];
     for (const selector of attachmentChipSelectors) {
       for (const node of Array.from(composerScope.querySelectorAll(selector))) {
@@ -1371,6 +1379,9 @@ export async function waitForAttachmentCompletion(
       btn?.parentElement?.parentElement?.innerText?.toLowerCase?.() ?? '',
     );
     attachedNames.push(...cardTexts.filter(Boolean));
+    const attachmentChipCount = composerScope.querySelectorAll(attachmentChipSelectors.join(',')).length;
+    const removeCount = composerScope.querySelectorAll(removeSelectors.join(',')).length;
+    const attachmentUiCount = Math.max(attachmentChipCount, removeCount);
 
     const inputNames = [];
     const inputScope = composerScope ? Array.from(composerScope.querySelectorAll('input[type="file"]')) : [];
@@ -1469,6 +1480,7 @@ export async function waitForAttachmentCompletion(
       attachedNames,
       inputNames,
       fileCount,
+      attachmentUiCount,
     };
   })()`;
   while (Date.now() < deadline) {
@@ -1481,6 +1493,7 @@ export async function waitForAttachmentCompletion(
       attachedNames?: string[];
       inputNames?: string[];
       fileCount?: number;
+      attachmentUiCount?: number;
     } | undefined;
     if (!value && logger?.verbose) {
       const exception = (response as { exceptionDetails?: { text?: string; exception?: { description?: string } } })
@@ -1505,6 +1518,7 @@ export async function waitForAttachmentCompletion(
               attachedNames: (value.attachedNames ?? []).slice(0, 3),
               inputNames: (value.inputNames ?? []).slice(0, 3),
               fileCount: value.fileCount ?? 0,
+              attachmentUiCount: value.attachmentUiCount ?? 0,
             })}`,
           );
         }
@@ -1516,7 +1530,9 @@ export async function waitForAttachmentCompletion(
         .map((name) => name.toLowerCase().replace(/\s+/g, ' ').trim())
         .filter(Boolean);
       const fileCount = typeof value.fileCount === 'number' ? value.fileCount : 0;
+      const attachmentUiCount = typeof value.attachmentUiCount === 'number' ? value.attachmentUiCount : 0;
       const fileCountSatisfied = expectedNormalized.length > 0 && fileCount >= expectedNormalized.length;
+      const attachmentUiSatisfied = expectedNormalized.length > 0 && attachmentUiCount >= expectedNormalized.length;
       const matchesExpected = (expected: string): boolean => {
         const baseName = expected.split('/').pop()?.split('\\').pop() ?? expected;
         const normalizedExpected = baseName.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -1538,7 +1554,7 @@ export async function waitForAttachmentCompletion(
         });
       };
       const missing = expectedNormalized.filter((expected) => !matchesExpected(expected));
-      if (missing.length === 0 || fileCountSatisfied) {
+      if (missing.length === 0 || fileCountSatisfied || attachmentUiSatisfied) {
         const stableThresholdMs = value.uploading ? 3000 : 1500;
         if (attachmentMatchSince === null) {
           attachmentMatchSince = Date.now();
@@ -1553,7 +1569,7 @@ export async function waitForAttachmentCompletion(
           return;
         }
         // If files are attached but button isn't ready yet, give it more time but don't fail immediately.
-        if (value.filesAttached || fileCountSatisfied) {
+        if (value.filesAttached || fileCountSatisfied || attachmentUiSatisfied) {
           await delay(500);
           continue;
         }
@@ -1573,8 +1589,9 @@ export async function waitForAttachmentCompletion(
       });
       // Don't include 'disabled' - a disabled button likely means upload is still in progress.
       const inputStateOk = value.state === 'ready' || value.state === 'missing';
-      const inputSeenNow = inputMissing.length === 0 || fileCountSatisfied;
-      const inputEvidenceOk = Boolean(value.filesAttached) || Boolean(value.uploading) || fileCountSatisfied;
+      const inputSeenNow = inputMissing.length === 0 || fileCountSatisfied || attachmentUiSatisfied;
+      const inputEvidenceOk =
+        Boolean(value.filesAttached) || Boolean(value.uploading) || fileCountSatisfied || attachmentUiSatisfied;
       const stableThresholdMs = value.uploading ? 3000 : 1500;
       if (inputSeenNow && inputStateOk && inputEvidenceOk) {
         if (inputMatchSince === null) {
