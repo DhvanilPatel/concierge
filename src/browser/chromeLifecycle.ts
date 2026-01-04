@@ -38,6 +38,14 @@ export async function launchChrome(config: ResolvedBrowserConfig, userDataDir: s
   return Object.assign(launcher, { host: connectHost ?? '127.0.0.1' }) as LaunchedChrome & { host?: string };
 }
 
+export async function terminateChrome(chrome: LaunchedChrome): Promise<void> {
+  try {
+    await chrome.kill();
+  } catch {
+    // ignore kill failures
+  }
+}
+
 export function registerTerminationHooks(
   chrome: LaunchedChrome,
   userDataDir: string,
@@ -75,11 +83,7 @@ export function registerTerminationHooks(
           logger('Session still in flight; reattach with "concierge session <slug>" to continue.');
         }
       } else {
-        try {
-          await chrome.kill();
-        } catch {
-          // ignore kill failures
-        }
+        await terminateChrome(chrome);
         if (opts?.preserveUserDataDir) {
           // Preserve the profile directory (manual login), but clear reattach hints so we don't
           // try to reuse a dead DevTools port on the next run.

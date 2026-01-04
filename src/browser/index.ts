@@ -8,6 +8,7 @@ import {
   launchChrome,
   registerTerminationHooks,
   hideChromeWindow,
+  terminateChrome,
   connectToChrome,
   connectToRemoteChrome,
   closeRemoteChromeTarget,
@@ -754,22 +755,14 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     );
   } finally {
     try {
-      if (!connectionClosedUnexpectedly) {
-        await client?.close();
-      }
+      await client?.close();
     } catch {
       // ignore
     }
     removeDialogHandler?.();
     removeTerminationHooks?.();
     if (!effectiveKeepBrowser) {
-      if (!connectionClosedUnexpectedly) {
-        try {
-          await chrome.kill();
-        } catch {
-          // ignore kill failures
-        }
-      }
+      await terminateChrome(chrome);
       if (manualLogin) {
         const shouldCleanup = await shouldCleanupManualLoginProfileState(
           userDataDir,
