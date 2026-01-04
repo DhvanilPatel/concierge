@@ -1,12 +1,12 @@
 # Chromium-based browsers (Chromium, Edge, Brave variants)
 
-Oracle’s browser engine assumes Google Chrome by default: it launches Chrome via `chrome-launcher` and copies cookies from Chrome’s profile/keychain so you stay signed in to ChatGPT. Chromium, Microsoft Edge, and other forks ship the same DevTools protocol, but they keep the executable and cookie store in different locations. Use the knobs below to point Oracle at those assets explicitly.
+Concierge’s browser engine assumes Google Chrome by default: it launches Chrome via `chrome-launcher` and copies cookies from Chrome’s profile/keychain so you stay signed in to ChatGPT. Chromium, Microsoft Edge, and other forks ship the same DevTools protocol, but they keep the executable and cookie store in different locations. Use the knobs below to point Concierge at those assets explicitly.
 
-## 1. Point Oracle at the right executable
+## 1. Point Concierge at the right executable
 
-Either pass the CLI flag or set it once in `~/.oracle/config.json`:
+Either pass the CLI flag or set it once in `~/.concierge/config.json`:
 
-- CLI: `oracle --engine browser --browser-chrome-path "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" …`
+- CLI: `concierge --browser-chrome-path "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" …`
 - Config:
   ```json5
   {
@@ -16,14 +16,14 @@ Either pass the CLI flag or set it once in `~/.oracle/config.json`:
   }
   ```
 
-`--browser-chrome-path` (also exposed in `oracle --debug-help`) controls which binary `chrome-launcher` starts. You can still keep `chromeProfile: "Default"` if you want to copy cookies from Chrome proper while launching Edge/Chromium.
+`--browser-chrome-path` (also exposed in `concierge --debug-help`) controls which binary `chrome-launcher` starts. You can still keep `chromeProfile: "Default"` if you want to copy cookies from Chrome proper while launching Edge/Chromium.
 
 ## 2. Tell cookie sync where your session lives
 
-Set the new `--browser-cookie-path` flag (or `browser.chromeCookiePath` in config) to the absolute path of the fork’s `Cookies` SQLite database. When present, Oracle feeds this path straight into the internal cookie reader, skipping Chrome-only heuristics and profile-name guesses.
+Set the new `--browser-cookie-path` flag (or `browser.chromeCookiePath` in config) to the absolute path of the fork’s `Cookies` SQLite database. When present, Concierge feeds this path straight into the internal cookie reader, skipping Chrome-only heuristics and profile-name guesses.
 
 ```bash
-oracle --engine browser \
+concierge \
   --browser-chrome-path "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" \
   --browser-cookie-path "$HOME/Library/Application Support/Microsoft Edge/Profile 1/Cookies" \
   --prompt "Summarize the release notes"
@@ -41,7 +41,7 @@ Config example (JSON5):
 }
 ```
 
-If you omit `chromeCookiePath`, Oracle falls back to `chromeProfile` (name or explicit path). Providing both keeps things unambiguous.
+If you omit `chromeCookiePath`, Concierge falls back to `chromeProfile` (name or explicit path). Providing both keeps things unambiguous.
 
 ## Common cookie DB paths
 
@@ -55,11 +55,11 @@ Brave and other forks work the same way—inspect `%APPDATA%`/`~/Library/Applica
 
 ### macOS / Windows encryption caveat
 
-Oracle now detects the right Keychain/DPAPI label based on the cookie path (`Chrome Safe Storage`, `Chromium Safe Storage`, `Microsoft Edge Safe Storage`, etc.) and pulls the key automatically. If macOS asks for Keychain access, approve it. When the system doesn’t expose that secret (e.g., the browser hasn’t stored any cookies yet), fall back to `--browser-inline-cookies[(-file)]` until you can sign in once via the target browser.
+Concierge now detects the right Keychain/DPAPI label based on the cookie path (`Chrome Safe Storage`, `Chromium Safe Storage`, `Microsoft Edge Safe Storage`, etc.) and pulls the key automatically. If macOS asks for Keychain access, approve it. When the system doesn’t expose that secret (e.g., the browser hasn’t stored any cookies yet), fall back to `--browser-inline-cookies[(-file)]` until you can sign in once via the target browser.
 
 ## Troubleshooting checklist
 
-- `oracle --debug-help` lists both `--browser-chrome-path` and `--browser-cookie-path`.
-- Run with `-v` to verify which cookie source Oracle is using (Chrome profile, inline payload, or explicit path).
+- `concierge --debug-help` lists both `--browser-chrome-path` and `--browser-cookie-path`.
+- Run with `-v` to verify which cookie source Concierge is using (Chrome profile, inline payload, or explicit path).
 - If cookie sync fails with “Chrome Safe Storage” prompts while using another fork, fall back to inline cookies until the fork’s password store is supported.
 - `CHROME_PATH` still works as a last-resort override for the executable; config + CLI flags are preferred because they’re persisted per workspace.

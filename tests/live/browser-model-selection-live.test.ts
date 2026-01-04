@@ -103,7 +103,7 @@ const CASES = [
                 break;
               }
               const transient =
-                message.includes('Chrome window closed before oracle finished') ||
+                message.includes('Chrome window closed before Concierge finished') ||
                 message.includes('Prompt did not appear in conversation before timeout') ||
                 message.includes('Reattach target did not respond');
               if (transient && attempt < 3) {

@@ -129,7 +129,7 @@ export async function createRemoteServer(
     const runId = randomUUID();
     logger(`[serve] Accepted run ${runId} from ${formatSocket(req)} (prompt ${payload?.prompt?.length ?? 0} chars)`);
     // Each run gets an isolated temp dir so attachments/logs don't collide.
-    const runDir = await mkdtemp(path.join(os.tmpdir(), `oracle-serve-${runId}-`));
+    const runDir = await mkdtemp(path.join(os.tmpdir(), `concierge-serve-${runId}-`));
     const attachmentDir = path.join(runDir, 'attachments');
     await mkdir(attachmentDir, { recursive: true });
 

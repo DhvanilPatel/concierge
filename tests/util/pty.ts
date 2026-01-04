@@ -34,7 +34,7 @@ export interface RunPtyResult {
 }
 
 /**
- * Spawn the compiled oracle CLI under a pseudo-TTY and drive it with scripted steps.
+ * Spawn the compiled concierge CLI under a pseudo-TTY and drive it with scripted steps.
  * The caller is responsible for cleaning up the returned homeDir.
  */
 export async function runOracleTuiWithPty({
@@ -56,15 +56,15 @@ export async function runOracleTuiWithPty({
     throw new Error('PTY module not available');
   }
 
-  const home = homeDir ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'oracle-tui-')));
-  const entry = path.join(process.cwd(), 'dist/bin/oracle-cli.js');
+  const home = homeDir ?? (await fs.mkdtemp(path.join(os.tmpdir(), 'concierge-tui-')));
+  const entry = path.join(process.cwd(), 'dist/bin/concierge-cli.js');
   const env = {
     ...process.env,
     // Uppercase env names are intentional for CLI behavior.
     // biome-ignore lint/style/useNamingConvention: env keys stay uppercase
     ORACLE_FORCE_TUI: '1',
     // biome-ignore lint/style/useNamingConvention: env keys stay uppercase
-    ORACLE_HOME_DIR: home,
+    CONCIERGE_HOME_DIR: home,
     // biome-ignore lint/style/useNamingConvention: env keys stay uppercase
     FORCE_COLOR: '1',
     // biome-ignore lint/style/useNamingConvention: env keys stay uppercase

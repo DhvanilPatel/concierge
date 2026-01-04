@@ -2,8 +2,8 @@ import { CHATGPT_URL, DEFAULT_MODEL_STRATEGY, DEFAULT_MODEL_TARGET } from './con
 import { normalizeBrowserModelStrategy } from './modelStrategy.js';
 import type { BrowserAutomationConfig, ResolvedBrowserConfig } from './types.js';
 import { isTemporaryChatUrl, normalizeChatgptUrl } from './utils.js';
-import os from 'node:os';
 import path from 'node:path';
+import { getOracleHomeDir } from '../oracleHome.js';
 
 export const DEFAULT_BROWSER_CONFIG: ResolvedBrowserConfig = {
   chromeProfile: null,
@@ -58,7 +58,7 @@ export function resolveBrowserConfig(config: BrowserAutomationConfig | undefined
   const resolvedProfileDir =
     config?.manualLoginProfileDir ??
     process.env.ORACLE_BROWSER_PROFILE_DIR ??
-    path.join(os.homedir(), '.oracle', 'browser-profile');
+    path.join(getOracleHomeDir(), 'browser-profile');
   return {
     ...DEFAULT_BROWSER_CONFIG,
     ...(config ?? {}),

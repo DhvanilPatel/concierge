@@ -9,30 +9,10 @@ const baseRunOptions: RunOracleOptions = {
 };
 
 describe('runDryRunSummary', () => {
-  test('prints API token summary and file stats', async () => {
-    const log = vi.fn();
-    await runDryRunSummary(
-      {
-        engine: 'api',
-        runOptions: { ...baseRunOptions, file: ['notes.md'] },
-        cwd: '/repo',
-        version: '1.2.3',
-        log,
-      },
-      {
-        readFilesImpl: async () => [{ path: '/repo/notes.md', content: 'console.log("dry run")' }],
-      },
-    );
-    const header = log.mock.calls.find(([entry]) => String(entry).includes('would call gpt-5.2-pro'));
-    expect(header?.[0]).toContain('[dry-run]');
-    expect(log.mock.calls.some(([entry]) => String(entry).includes('File Token Usage'))).toBe(true);
-  });
-
   test('prints browser attachment summary', async () => {
     const log = vi.fn();
     await runDryRunSummary(
       {
-        engine: 'browser',
         runOptions: { ...baseRunOptions, file: ['report.txt'] },
         cwd: '/repo',
         version: '2.0.0',
@@ -66,6 +46,7 @@ describe('runDryRunSummary', () => {
           attachmentsPolicy: 'auto',
           attachmentMode: 'upload',
           fallback: null,
+          bundled: null,
         }),
       },
     );
@@ -80,7 +61,6 @@ describe('runDryRunSummary', () => {
     const log = vi.fn();
     await runDryRunSummary(
       {
-        engine: 'browser',
         runOptions: { ...baseRunOptions, model: 'gpt-5.1' },
         cwd: '/repo',
         version: '3.0.0',
@@ -117,6 +97,7 @@ describe('runDryRunSummary', () => {
           attachmentsPolicy: 'auto',
           attachmentMode: 'inline',
           fallback: null,
+          bundled: null,
         }),
       },
     );

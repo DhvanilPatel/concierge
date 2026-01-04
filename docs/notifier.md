@@ -1,12 +1,12 @@
 # Session completion notifications
 
-Oracle can raise a desktop notification when a session finishes so you don’t have to babysit long runs.
+Concierge can raise a desktop notification when a session finishes so you don’t have to babysit long runs.
 
 ## Behavior
 
 - **Default:** on, except when `CI` or `SSH_CONNECTION` is set (those environments suppress notifications). The notification still fires when there is no TTY.
 - **Scope:** fires on successful completion only (errors keep quiet).
-- **Content:** `Oracle🧿 finished – session <slug> · $<cost> · <chars> chars`. Cost only shows for API runs where token pricing is known. Character count uses the returned answer text length.
+- **Content:** `Concierge 🛎️ finished – session <slug> · <chars> chars` (cost appears only for legacy API sessions where pricing is known).
 - **Sound:** off by default. Enable with `--notify-sound` or `ORACLE_NOTIFY_SOUND=1`.
 
 ## CLI flags / env
@@ -23,12 +23,12 @@ Notifications are powered by a macOS-first helper plus [`toasted-notifier`](http
 - Linux: `notify-send`/libnotify
 - Windows: native Toasts via ntfy-toast/SnoreToast
 
-If the OS backend is missing, Oracle logs a one-line skip reason instead of failing the session.
+If the OS backend is missing, Concierge logs a one-line skip reason instead of failing the session.
 
-macOS note: The bundled `terminal-notifier` can occasionally lose its execute bit after download. Oracle automatically re-chmods it on first failure; if it still can’t run, clear quarantine manually:
+macOS note: The bundled `terminal-notifier` can occasionally lose its execute bit after download. Concierge automatically re-chmods it on first failure; if it still can’t run, clear quarantine manually:
 
 ```bash
-xattr -dr com.apple.quarantine \ \
+xattr -dr com.apple.quarantine \
   $(pnpm root)/toasted-notifier/vendor/mac.noindex/terminal-notifier.app
 ```
 

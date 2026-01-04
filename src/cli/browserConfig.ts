@@ -280,11 +280,11 @@ async function resolveInlineCookies({
     if (parsed) return { cookies: parsed, source };
   }
 
-  // fallback: ~/.oracle/cookies.{json,base64}
-  const oracleHome = getOracleHomeDir();
+  // fallback: ~/.concierge/cookies.{json,base64}
+  const conciergeHome = getOracleHomeDir();
   const candidates = ['cookies.json', 'cookies.base64'];
   for (const file of candidates) {
-    const fullPath = path.join(oracleHome, file);
+    const fullPath = path.join(conciergeHome, file);
     try {
       const stat = await fs.stat(fullPath);
       if (!stat.isFile()) continue;

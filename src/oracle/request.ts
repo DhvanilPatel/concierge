@@ -1,11 +1,8 @@
 import fs from 'node:fs/promises';
 import type {
-  BuildRequestBodyParams,
   FileContent,
   MinimalFsModule,
-  OracleRequestBody,
   RunOracleOptions,
-  ToolConfig,
 } from './types.js';
 import { DEFAULT_SYSTEM_PROMPT } from './config.js';
 import { createFileSections, readFiles } from './files.js';
@@ -19,38 +16,6 @@ export function buildPrompt(basePrompt: string, files: FileContent[], cwd = proc
   const sections = createFileSections(files, cwd);
   const sectionText = sections.map((section) => section.sectionText).join('\n\n');
   return `${basePrompt.trim()}\n\n${sectionText}`;
-}
-
-export function buildRequestBody({
-  modelConfig,
-  systemPrompt,
-  userPrompt,
-  searchEnabled,
-  maxOutputTokens,
-  background,
-  storeResponse,
-}: BuildRequestBodyParams): OracleRequestBody {
-  const searchToolType: ToolConfig['type'] = modelConfig.searchToolType ?? 'web_search_preview';
-  return {
-    model: modelConfig.apiModel ?? modelConfig.model,
-    instructions: systemPrompt,
-    input: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: userPrompt,
-          },
-        ],
-      },
-    ],
-    tools: searchEnabled ? [{ type: searchToolType }] : undefined,
-    reasoning: modelConfig.reasoning || undefined,
-    max_output_tokens: maxOutputTokens,
-    background: background ? true : undefined,
-    store: storeResponse ? true : undefined,
-  };
 }
 
 export async function renderPromptMarkdown(

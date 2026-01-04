@@ -35,12 +35,6 @@ export interface BrowserConfigDefaults {
   manualLoginProfileDir?: string | null;
 }
 
-export interface AzureConfig {
-  endpoint?: string;
-  deployment?: string;
-  apiVersion?: string;
-}
-
 export interface RemoteServiceConfig {
   host?: string;
   token?: string;
@@ -56,8 +50,6 @@ export interface UserConfig {
   filesReport?: boolean;
   background?: boolean;
   promptSuffix?: string;
-  apiBaseUrl?: string;
-  azure?: AzureConfig;
   sessionRetentionHours?: number;
   remote?: RemoteServiceConfig;
   remoteHost?: string;

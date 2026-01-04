@@ -28,7 +28,7 @@ export interface NotificationContent {
   characters?: number;
 }
 
-const ORACLE_EMOJI = '🧿';
+const CONCIERGE_EMOJI = '🛎️';
 
 export function resolveNotificationSettings(
   {
@@ -69,7 +69,7 @@ export async function sendSessionNotification(
     return;
   }
 
-  const title = `Oracle${ORACLE_EMOJI} finished`;
+  const title = `Concierge ${CONCIERGE_EMOJI} finished`;
   const message = buildMessage(payload, sanitizePreview(answerPreview));
 
   try {

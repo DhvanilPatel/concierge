@@ -35,7 +35,7 @@ vi.mock('../../../src/sessionStore.ts', () => ({
     listSessions: listSessionsMock,
     deleteOlderThan: vi.fn(),
     getPaths: getPathsMock,
-    sessionsDir: vi.fn().mockReturnValue('/tmp/.oracle/sessions'),
+    sessionsDir: vi.fn().mockReturnValue('/tmp/.concierge/sessions'),
   },
   pruneOldSessions: pruneOldSessionsMock,
 }));
@@ -48,19 +48,19 @@ const originalCI = process.env.CI;
 describe('askOracleFlow', () => {
   beforeEach(() => {
     // Make notification defaults deterministic (CI disables by default).
-  process.env.CI = '';
-  promptMock.mockReset();
-  performSessionRunMock.mockReset();
-  ensureSessionStorageMock.mockReset();
-  initializeSessionMock.mockReset();
-  createSessionLogWriterMock.mockReset();
-  readSessionMock.mockReset();
-  readRequestMock.mockReset();
-  readLogMock.mockReset();
-  listSessionsMock.mockReset();
-  getPathsMock.mockReset();
-  pruneOldSessionsMock.mockReset();
-  listSessionsMock.mockResolvedValue([]);
+    process.env.CI = '';
+    promptMock.mockReset();
+    performSessionRunMock.mockReset();
+    ensureSessionStorageMock.mockReset();
+    initializeSessionMock.mockReset();
+    createSessionLogWriterMock.mockReset();
+    readSessionMock.mockReset();
+    readRequestMock.mockReset();
+    readLogMock.mockReset();
+    listSessionsMock.mockReset();
+    getPathsMock.mockReset();
+    pruneOldSessionsMock.mockReset();
+    listSessionsMock.mockResolvedValue([]);
     createSessionLogWriterMock.mockReturnValue({
       logLine: vi.fn(),
       writeChunk: vi.fn(),
@@ -77,9 +77,12 @@ describe('askOracleFlow', () => {
   test('cancels when prompt input is blank', async () => {
     promptMock.mockResolvedValue({
       promptInput: '',
-      mode: 'api',
       model: DEFAULT_MODEL,
       files: [],
+      chromeProfile: 'Default',
+      chromeCookiePath: '',
+      hideWindow: false,
+      keepBrowser: false,
     });
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
@@ -93,10 +96,13 @@ describe('askOracleFlow', () => {
   test('runs happy path and calls performSessionRun', async () => {
     promptMock.mockResolvedValue({
       promptInput: 'Hello world',
-      mode: 'api',
+      slug: '',
       model: DEFAULT_MODEL,
       files: [],
-      models: [],
+      chromeProfile: 'Default',
+      chromeCookiePath: '',
+      hideWindow: false,
+      keepBrowser: false,
     });
 
     const config: UserConfig = {};
@@ -104,7 +110,7 @@ describe('askOracleFlow', () => {
 
     expect(ensureSessionStorageMock).toHaveBeenCalled();
     expect(initializeSessionMock).toHaveBeenCalledWith(
-      expect.objectContaining({ prompt: 'Hello world', mode: 'api' }),
+      expect.objectContaining({ prompt: 'Hello world', mode: 'browser' }),
       expect.any(String),
       expect.objectContaining({ enabled: true, sound: false }),
     );
@@ -112,20 +118,23 @@ describe('askOracleFlow', () => {
     expect(performSessionRunMock.mock.calls[0][0].sessionMeta.id).toBe('sess-123');
   });
 
-  test('passes multi-model selections to run options', async () => {
+  test('uses selected model in run options', async () => {
     promptMock.mockResolvedValue({
-      promptInput: 'Multi',
-      mode: 'api',
-      model: DEFAULT_MODEL,
-      models: ['gemini-3-pro'],
+      promptInput: 'Model check',
+      slug: '',
+      model: 'gpt-5.2-instant',
       files: [],
+      chromeProfile: 'Default',
+      chromeCookiePath: '',
+      hideWindow: false,
+      keepBrowser: false,
     });
 
     const config: UserConfig = {};
     await tui.askOracleFlow('0.4.1', config);
 
-    const creationArgs = initializeSessionMock.mock.calls[0]?.[0] as RunOracleOptions & { models?: string[] };
-    expect(creationArgs.models).toEqual([DEFAULT_MODEL, 'gemini-3-pro']);
+    const creationArgs = initializeSessionMock.mock.calls[0]?.[0] as RunOracleOptions;
+    expect(creationArgs.model).toBe('gpt-5.2-instant');
   });
 });
 
@@ -134,18 +143,18 @@ afterAll(() => {
 });
 
 describe('resolveCost basics', () => {
-  test('computes cost for api sessions without stored cost', async () => {
+  test('returns null cost for browser sessions', async () => {
     const { resolveCost } = await import('../../../src/cli/tui/index.ts');
-    const apiMeta = {
+    const browserMeta = {
       id: 'a',
       createdAt: new Date().toISOString(),
       status: 'completed',
       usage: { inputTokens: 1000, outputTokens: 2000, reasoningTokens: 0, totalTokens: 3000 },
       model: DEFAULT_MODEL,
-      mode: 'api' as const,
-      options: {},
+      mode: 'browser' as const,
+      options: { mode: 'browser' },
     };
-    expect(resolveCost(apiMeta)).toBeGreaterThan(0);
+    expect(resolveCost(browserMeta)).toBeNull();
   });
 });
 
@@ -160,7 +169,7 @@ describe('showSessionDetail', () => {
       createdAt: '2025-11-21T00:00:00Z',
       status: 'completed',
       model: 'gpt-5.1',
-      options: { prompt: 'hi', model: 'gpt-5.1', mode: 'api' },
+      options: { prompt: 'hi', model: 'gpt-5.1', mode: 'browser' },
     });
     readLogMock.mockResolvedValueOnce('Answer: hello');
     getPathsMock.mockResolvedValueOnce({

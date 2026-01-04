@@ -60,17 +60,6 @@ export function dedupePathInputs(
   return { deduped, duplicates };
 }
 
-export function collectModelList(value: string, previous: string[] = []): string[] {
-  if (!value) {
-    return previous;
-  }
-  const entries = value
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
-  return previous.concat(entries);
-}
-
 export function parseFloatOption(value: string): number {
   const parsed = Number.parseFloat(value);
   if (Number.isNaN(parsed)) {
@@ -131,83 +120,8 @@ export function resolvePreviewMode(value: boolean | string | undefined): Preview
   return undefined;
 }
 
-export function parseSearchOption(value: string): boolean {
-  const normalized = value.trim().toLowerCase();
-  if (['on', 'true', '1', 'yes'].includes(normalized)) {
-    return true;
-  }
-  if (['off', 'false', '0', 'no'].includes(normalized)) {
-    return false;
-  }
-  throw new InvalidArgumentError('Search mode must be "on" or "off".');
-}
-
 export function normalizeModelOption(value: string | undefined): string {
   return (value ?? '').trim();
-}
-
-export function normalizeBaseUrl(value: string | undefined): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed?.length ? trimmed : undefined;
-}
-
-export function parseTimeoutOption(value: string | undefined): number | 'auto' | undefined {
-  if (value == null) return undefined;
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'auto') return 'auto';
-  const parsed = Number.parseFloat(normalized);
-  if (Number.isNaN(parsed) || parsed <= 0) {
-    throw new InvalidArgumentError('Timeout must be a positive number of seconds or "auto".');
-  }
-  return parsed;
-}
-
-export function resolveApiModel(modelValue: string): ModelName {
-  const normalized = normalizeModelOption(modelValue).toLowerCase();
-  if (normalized in MODEL_CONFIGS) {
-    return normalized as ModelName;
-  }
-  if (normalized.includes('grok')) {
-    return 'grok-4.1';
-  }
-  if (normalized.includes('claude') && normalized.includes('sonnet')) {
-    return 'claude-4.5-sonnet';
-  }
-  if (normalized.includes('claude') && normalized.includes('opus')) {
-    return 'claude-4.1-opus';
-  }
-  if (normalized === 'claude' || normalized === 'sonnet' || /(^|\b)sonnet(\b|$)/.test(normalized)) {
-    return 'claude-4.5-sonnet';
-  }
-  if (normalized === 'opus' || normalized === 'claude-4.1') {
-    return 'claude-4.1-opus';
-  }
-  if (normalized.includes('5.0') || normalized === 'gpt-5-pro' || normalized === 'gpt-5') {
-    return 'gpt-5-pro';
-  }
-  if (normalized.includes('5-pro') && !normalized.includes('5.1')) {
-    return 'gpt-5-pro';
-  }
-  if (normalized.includes('5.2') && normalized.includes('pro')) {
-    return 'gpt-5.2-pro';
-  }
-  if (normalized.includes('5.1') && normalized.includes('pro')) {
-    return 'gpt-5.1-pro';
-  }
-  if (normalized.includes('codex')) {
-    if (normalized.includes('max')) {
-      throw new InvalidArgumentError('gpt-5.1-codex-max is not available yet. OpenAI has not released the API.');
-    }
-    return 'gpt-5.1-codex';
-  }
-  if (normalized.includes('gemini')) {
-    return 'gemini-3-pro';
-  }
-  if (normalized.includes('pro')) {
-    return 'gpt-5.2-pro';
-  }
-  // Passthrough for custom/OpenRouter model IDs.
-  return normalized as ModelName;
 }
 
 export function inferModelFromLabel(modelValue: string): ModelName {
@@ -217,18 +131,6 @@ export function inferModelFromLabel(modelValue: string): ModelName {
   }
   if (normalized in MODEL_CONFIGS) {
     return normalized as ModelName;
-  }
-  if (normalized.includes('grok')) {
-    return 'grok-4.1';
-  }
-  if (normalized.includes('claude') && normalized.includes('sonnet')) {
-    return 'claude-4.5-sonnet';
-  }
-  if (normalized.includes('claude') && normalized.includes('opus')) {
-    return 'claude-4.1-opus';
-  }
-  if (normalized.includes('codex')) {
-    return 'gpt-5.1-codex';
   }
   if (normalized.includes('gemini')) {
     return 'gemini-3-pro';

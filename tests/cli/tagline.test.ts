@@ -42,7 +42,7 @@ describe('taglines', () => {
     const env: Record<string, string> = {};
     env.ORACLE_TAGLINE_INDEX = '0';
     const intro = formatIntroLine('1.2.3', { env, richTty: false });
-    expect(intro.startsWith('🧿 oracle 1.2.3 — ')).toBe(true);
+    expect(intro.startsWith('🛎️ concierge 1.2.3 — ')).toBe(true);
     expect(intro).toContain(TAGLINES[0]);
   });
 });

@@ -4,8 +4,8 @@ import type {
   SessionMetadata,
   SessionTransportMetadata,
   SessionUserErrorMetadata,
+  SessionResponseMetadata,
 } from '../sessionStore.js';
-import type { OracleResponseMetadata } from '../oracle.js';
 import { renderMarkdownAnsi } from './markdownRenderer.js';
 import { formatFinishLine } from '../oracle/finishLine.js';
 import { sessionStore, wait } from '../sessionStore.js';
@@ -382,7 +382,7 @@ export async function attachSession(sessionId: string, options?: AttachSessionOp
   }
 }
 
-export function formatResponseMetadata(metadata?: OracleResponseMetadata): string | null {
+export function formatResponseMetadata(metadata?: SessionResponseMetadata): string | null {
   if (!metadata) {
     return null;
   }

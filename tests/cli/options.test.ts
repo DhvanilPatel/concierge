@@ -4,9 +4,7 @@ import {
   collectPaths,
   parseFloatOption,
   parseIntOption,
-  parseSearchOption,
   resolvePreviewMode,
-  resolveApiModel,
   inferModelFromLabel,
   normalizeModelOption,
   parseHeartbeatOption,
@@ -137,49 +135,10 @@ describe('parseHeartbeatOption', () => {
   });
 });
 
-describe('parseSearchOption', () => {
-  test('accepts on/off variants', () => {
-    expect(parseSearchOption('on')).toBe(true);
-    expect(parseSearchOption('OFF')).toBe(false);
-    expect(parseSearchOption('Yes')).toBe(true);
-    expect(parseSearchOption('0')).toBe(false);
-  });
-
-  test('throws on invalid input', () => {
-    expect(() => parseSearchOption('maybe')).toThrow(InvalidArgumentError);
-  });
-});
-
 describe('normalizeModelOption', () => {
   test('trims whitespace safely', () => {
     expect(normalizeModelOption('  gpt-5.2-pro  ')).toBe('gpt-5.2-pro');
     expect(normalizeModelOption(undefined)).toBe('');
-  });
-});
-
-describe('resolveApiModel', () => {
-  test('accepts canonical names regardless of case', () => {
-    expect(resolveApiModel('gpt-5.2-pro')).toBe('gpt-5.2-pro');
-    expect(resolveApiModel('GPT-5.0-PRO')).toBe('gpt-5-pro');
-    expect(resolveApiModel('gpt-5-pro')).toBe('gpt-5-pro');
-    expect(resolveApiModel('GPT-5.1')).toBe('gpt-5.1');
-    expect(resolveApiModel('GPT-5.1-CODEX')).toBe('gpt-5.1-codex');
-    expect(resolveApiModel('claude-4.5-sonnet')).toBe('claude-4.5-sonnet');
-    expect(resolveApiModel('Claude Opus 4.1')).toBe('claude-4.1-opus');
-    expect(resolveApiModel('sonnet')).toBe('claude-4.5-sonnet');
-    expect(resolveApiModel('opus')).toBe('claude-4.1-opus');
-    expect(resolveApiModel('CLAUDE')).toBe('claude-4.5-sonnet');
-    expect(resolveApiModel('Gemini')).toBe('gemini-3-pro');
-    expect(resolveApiModel('grok')).toBe('grok-4.1');
-    expect(resolveApiModel('Grok 4.1')).toBe('grok-4.1');
-  });
-
-  test('rejects codex max until API is available', () => {
-    expect(() => resolveApiModel('gpt-5.1-codex-max')).toThrow('gpt-5.1-codex-max is not available yet');
-  });
-
-  test('passes through unknown names (OpenRouter/custom)', () => {
-    expect(resolveApiModel('instant')).toBe('instant');
   });
 });
 
@@ -188,7 +147,7 @@ describe('inferModelFromLabel', () => {
     expect(inferModelFromLabel('gpt-5.2-pro')).toBe('gpt-5.2-pro');
     expect(inferModelFromLabel('gpt-5-pro')).toBe('gpt-5-pro');
     expect(inferModelFromLabel('gpt-5.1')).toBe('gpt-5.1');
-    expect(inferModelFromLabel('gpt-5.1-codex')).toBe('gpt-5.1-codex');
+    expect(inferModelFromLabel('gemini-3-pro')).toBe('gemini-3-pro');
   });
 
   test('infers 5.1 variants as gpt-5.1', () => {
@@ -203,26 +162,15 @@ describe('inferModelFromLabel', () => {
     expect(inferModelFromLabel('5_2 FAST')).toBe('gpt-5.2-instant');
   });
 
-  test('infers Codex labels', () => {
-    expect(inferModelFromLabel('ChatGPT Codex')).toBe('gpt-5.1-codex');
-    expect(inferModelFromLabel('Codex Max Studio')).toBe('gpt-5.1-codex');
-  });
-
   test('falls back to pro when the label references pro', () => {
     expect(inferModelFromLabel('ChatGPT Pro')).toBe('gpt-5.2-pro');
     expect(inferModelFromLabel('GPT-5.2 Pro')).toBe('gpt-5.2-pro');
     expect(inferModelFromLabel('GPT-5 Pro (Classic)')).toBe('gpt-5-pro');
   });
 
-  test('infers Claude family labels', () => {
-    expect(inferModelFromLabel('Claude Sonnet 4.5')).toBe('claude-4.5-sonnet');
-    expect(inferModelFromLabel('Claude Opus 4.1')).toBe('claude-4.1-opus');
-  });
-
-  test('infers Grok aliases', () => {
-    expect(inferModelFromLabel('grok')).toBe('grok-4.1');
-    expect(inferModelFromLabel('Grok 4.1')).toBe('grok-4.1');
-    expect(inferModelFromLabel('Grok-4-1')).toBe('grok-4.1');
+  test('infers Gemini labels', () => {
+    expect(inferModelFromLabel('Gemini')).toBe('gemini-3-pro');
+    expect(inferModelFromLabel('Gemini 3 Pro')).toBe('gemini-3-pro');
   });
 
   test('falls back to gpt-5.2-pro when label empty and to gpt-5.2 for other ambiguous strings', () => {

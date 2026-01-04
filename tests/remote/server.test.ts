@@ -8,7 +8,7 @@ import type { BrowserRunResult } from '../../src/browserMode.js';
 
 describe('remote browser service', () => {
   test('streams logs and returns results via client executor', async () => {
-    const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'oracle-remote-test-'));
+    const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'concierge-remote-test-'));
     const attachmentPath = path.join(tmpDir, 'note.txt');
     await writeFile(attachmentPath, 'hello world', 'utf8');
 

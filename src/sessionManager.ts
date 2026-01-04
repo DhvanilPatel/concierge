@@ -4,7 +4,7 @@ import { createWriteStream } from 'node:fs';
 import type { WriteStream } from 'node:fs';
 import net from 'node:net';
 import type { BrowserModelStrategy, CookieParam } from './browser/types.js';
-import type { TransportFailureReason, AzureOptions, ModelName, ThinkingTimeLevel } from './oracle.js';
+import type { TransportFailureReason, ModelName, ThinkingTimeLevel } from './oracle.js';
 import { DEFAULT_MODEL } from './oracle.js';
 import { safeModelSlug } from './oracle/modelResolver.js';
 import { getOracleHomeDir } from './oracleHome.js';
@@ -94,8 +94,6 @@ export interface StoredRunOptions {
   browserBundleFiles?: boolean;
   background?: boolean;
   search?: boolean;
-  baseUrl?: string;
-  azure?: AzureOptions;
   effectiveModelId?: string;
   renderPlain?: boolean;
   writeOutputPath?: string;
@@ -350,7 +348,7 @@ export async function initializeSession(
   const sessionId = await ensureUniqueSessionId(baseSlug);
   const dir = sessionDir(sessionId);
   await ensureDir(dir);
-  const mode = options.mode ?? 'api';
+  const mode = options.mode ?? 'browser';
   const browserConfig = options.browserConfig;
   const modelList: ModelName[] =
     Array.isArray(options.models) && options.models.length > 0
@@ -394,8 +392,6 @@ export async function initializeSession(
       browserBundleFiles: options.browserBundleFiles,
       background: options.background,
       search: options.search,
-      baseUrl: options.baseUrl,
-      azure: options.azure,
       writeOutputPath: options.writeOutputPath,
     },
   };

@@ -2,8 +2,8 @@
 
 Concierge-specific notes:
 - Pro browser runs: allow up to 10 minutes; never click "Answer now"; keep at least 1–2 Pro live tests (reattach must stay Pro); move other tests to faster models where safe.
-- Live smoke tests: OpenAI live tests are opt-in. Run `CONCIERGE_LIVE_TEST=1 pnpm vitest run tests/live/openai-live.test.ts` with a real `OPENAI_API_KEY` when you need the background path; gpt-5-pro can take ~10 minutes.
-- Wait defaults: gpt-5-pro API runs detach by default; use `--wait` to stay attached. gpt-5.1 and browser runs block by default; every run prints `concierge session <id>` for reattach.
+- Live smoke tests: browser live tests are opt-in. Run `ORACLE_LIVE_TEST=1 pnpm test:live` (ChatGPT automation) or `ORACLE_LIVE_TEST=1 pnpm vitest run tests/live/gemini-web-live.test.ts` (Gemini web) when you need real browser coverage; Pro runs can take ~10 minutes.
+- Wait defaults: browser runs block by default; every run prints `concierge session <id>` for reattach.
 - Session storage: Concierge stores session data under `~/.concierge`; delete it if you need a clean slate.
 - CLI output: the first line of any top-level CLI start banner should use the concierge emoji, e.g. `🛎️ concierge (<version>) ...`; keep it only for the initial command headline. Exception: the TUI exit message also keeps the emoji.
 - Before a release, skim manual smokes in `docs/manual-tests.md` and rerun any that cover your change surface (especially browser/serve paths).

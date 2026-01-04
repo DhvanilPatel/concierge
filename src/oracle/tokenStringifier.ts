@@ -1,5 +1,4 @@
 // Minimal helper to stringify arbitrary input for tokenizer consumption.
-// Anthropic's tokenizer expects a string; we accept unknown and coerce safely.
 export function stringifyTokenizerInput(input: unknown): string {
   if (typeof input === 'string') return input;
   if (input === null || input === undefined) return '';

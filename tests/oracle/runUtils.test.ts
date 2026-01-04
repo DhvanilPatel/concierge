@@ -1,38 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { formatTokenEstimate, formatTokenValue, resolvePreviewMode } from '../../src/oracle/runUtils.js';
+import { formatTokenCount, formatTokenValue } from '../../src/oracle/runUtils.js';
 
-describe('runUtils #resolvePreviewMode', () => {
-  it('returns undefined for falsy input', () => {
-    expect(resolvePreviewMode(undefined)).toBeUndefined();
-    expect(resolvePreviewMode(false)).toBeUndefined();
-  });
-
-  it('normalizes true to summary', () => {
-    expect(resolvePreviewMode(true)).toBe('summary');
-  });
-
-  it('accepts supported strings', () => {
-    expect(resolvePreviewMode('json')).toBe('json');
-    expect(resolvePreviewMode('full')).toBe('full');
-  });
-
-  it('defaults invalid strings to summary', () => {
-    expect(resolvePreviewMode('nonsense')).toBe('summary');
-  });
-});
-
-describe('runUtils #formatTokenEstimate', () => {
+describe('runUtils #formatTokenCount', () => {
   it('returns plain number strings under 1000', () => {
-    expect(formatTokenEstimate(999)).toBe('999');
+    expect(formatTokenCount(999)).toBe('999');
   });
 
   it('abbreviates thousands with k and rounds to two decimals', () => {
-    expect(formatTokenEstimate(4252)).toBe('4.25k');
-    expect(formatTokenEstimate(4000)).toBe('4k');
-  });
-
-  it('applies formatter callback when provided', () => {
-    expect(formatTokenEstimate(1500, (text) => `*${text}*`)).toBe('*1.5k*');
+    expect(formatTokenCount(4252)).toBe('4.25k');
+    expect(formatTokenCount(4000)).toBe('4k');
   });
 });
 

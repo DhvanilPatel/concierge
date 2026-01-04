@@ -82,7 +82,7 @@ describe('resolveNotificationSettings', () => {
     const payload: NotificationContent = {
       sessionId: 'sess-1',
       sessionName: 'demo run',
-      mode: 'api',
+      mode: 'browser',
       model: 'gpt-5.1',
       usage: { inputTokens: 1000, outputTokens: 500 },
       characters: 1500,
@@ -95,7 +95,7 @@ describe('resolveNotificationSettings', () => {
     const { notifier } = await getMocks();
     expect(notifier.notify).toHaveBeenCalledTimes(1);
     const call = notifier.notify.mock.calls[0]?.[0];
-    expect(call?.title).toContain('Oracle');
+    expect(call?.title).toContain('Concierge');
     expect(call?.message).toContain('demo run');
     expect(call?.message).toContain('chars');
     expect(call?.message).not.toContain('**');

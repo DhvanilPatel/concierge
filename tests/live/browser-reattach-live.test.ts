@@ -99,7 +99,7 @@ function createLogger(): BrowserLogger {
                 message.includes('project URL missing');
               const transient =
                 message.includes('Prompt did not appear in conversation before timeout') ||
-                message.includes('Chrome window closed before oracle finished') ||
+                message.includes('Chrome window closed before Concierge finished') ||
                 message.includes('Reattach target did not respond');
               if (missingProject) {
                 console.warn(`Project URL unavailable (${projectUrl}); trying fallback.`);

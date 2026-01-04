@@ -1,16 +1,3 @@
-import type { OracleResponse, PreviewMode } from './types.js';
-
-export function resolvePreviewMode(value: boolean | string | undefined): PreviewMode | undefined {
-  const allowed = new Set<PreviewMode>(['summary', 'json', 'full']);
-  if (typeof value === 'string' && value.length > 0) {
-    return allowed.has(value as PreviewMode) ? (value as PreviewMode) : 'summary';
-  }
-  if (value) {
-    return 'summary';
-  }
-  return undefined;
-}
-
 /**
  * Format a token count, abbreviating thousands as e.g. 11.38k and trimming trailing zeros.
  */
@@ -22,11 +9,14 @@ export function formatTokenCount(value: number): string {
   return value.toLocaleString();
 }
 
-export function formatTokenEstimate(value: number, format: (text: string) => string = (text) => text): string {
-  return format(formatTokenCount(value));
-}
+type TokenUsage = {
+  input_tokens?: number;
+  output_tokens?: number;
+  reasoning_tokens?: number;
+  total_tokens?: number;
+};
 
-export function formatTokenValue(value: number, usage: OracleResponse['usage'], index: number): string {
+export function formatTokenValue(value: number, usage: TokenUsage, index: number): string {
   const estimatedFlag =
     (index === 0 && usage?.input_tokens == null) ||
     (index === 1 && usage?.output_tokens == null) ||

@@ -1,35 +1,23 @@
-import { isProModel } from '../oracle/modelResolver.js';
-
 export type EngineMode = 'api' | 'browser';
 
 export function defaultWaitPreference(model: string, engine: EngineMode): boolean {
-  // Pro-class API runs can take a long time; prefer non-blocking unless explicitly overridden.
-  if (engine === 'api' && isProModel(model)) {
-    return false;
-  }
-  return true; // browser or non-pro models are fast enough to block by default
+  void model;
+  void engine;
+  return true;
 }
 
 /**
- * Determine which engine to use based on CLI flags and the environment.
- *
- * Precedence:
- * 1) Legacy --browser flag forces browser.
- * 2) Explicit --engine value.
- * 3) OPENAI_API_KEY decides: api when set, otherwise browser.
+ * Browser-only build: always resolve to the browser engine.
  */
 export function resolveEngine(
   {
     engine,
     browserFlag,
-    env,
   }: { engine?: EngineMode; browserFlag?: boolean; env: NodeJS.ProcessEnv },
 ): EngineMode {
+  void engine;
   if (browserFlag) {
     return 'browser';
   }
-  if (engine) {
-    return engine;
-  }
-  return env.OPENAI_API_KEY ? 'api' : 'browser';
+  return 'browser';
 }

@@ -10,37 +10,7 @@
 - [x] Update all user-facing strings (Oracle → Concierge)
 - [x] Remove MCP server (~570 LOC removed)
 - [x] Create Concierge skill at `/Users/chip/clawd/skills/concierge/`
-
-## In Progress
-
-### Remove API Client Code
-
-Browser mode imports some shared utilities from `src/oracle/`, so we can't delete everything.
-
-**Safe to remove:**
-- `src/oracle/client.ts` - OpenAI/Gemini/Claude API client factory
-- `src/oracle/claude.ts` - Claude API client
-- `src/oracle/gemini.ts` - Gemini API client
-- `src/oracle/multiModelRunner.ts` - multi-model API runner
-
-**Keep (browser uses these):**
-- `src/oracle/format.ts` - formatElapsed
-- `src/oracle/errors.ts` - BrowserAutomationError
-- `src/oracle/markdown.ts` - formatFileSection
-- `src/oracle/modelResolver.ts` - isKnownModel
-- `src/oracle/promptAssembly.ts` - buildPromptMarkdown
-- `src/oracle/runUtils.ts` - formatTokenCount
-- `src/oracle/finishLine.ts` - formatFinishLine
-- `src/oracle/types.ts` - ThinkingTimeLevel
-- `src/oracle/config.ts` - MODEL_CONFIGS
-- `src/oracle/files.ts` - file reading
-- `src/oracle/tokenEstimate.ts` - token counting
-
-**Dependencies to remove after API code removal:**
-- `openai` - OpenAI API SDK
-- `@google/genai` - Gemini API SDK
-- `@google/generative-ai` - Gemini API SDK (v2)
-- `@anthropic-ai/tokenizer` - Claude tokenizer (check if browser uses it first)
+- [x] Remove API client code + dependencies (browser-only build)
 
 ## Pending - Browser Cleanup Fixes
 
@@ -112,7 +82,7 @@ export async function reapStaleSessions(): Promise<void> {
 
 ### 4. Concurrent Session Limit (Nice to have)
 
-**Problem:** Multiple Oracle instances spawn simultaneously without queue/lock.
+**Problem:** Multiple Concierge instances spawn simultaneously without queue/lock.
 
 **Solution:** Add a semaphore or lock file to limit concurrent browser sessions.
 
@@ -144,7 +114,7 @@ Each provider defines:
 ### Root Cause of Zombie Chrome Windows
 
 From session analysis on 2026-01-04:
-- 37 sessions marked "running" but only 2 oracle processes alive
+- 37 sessions marked "running" but only 2 concierge processes alive
 - 10 Chrome PIDs recorded as "running" but processes dead
 - 20 "what-is-2-2-reply-*" test sessions in 44 minutes (Clawdis retry loop)
 

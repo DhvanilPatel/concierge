@@ -39,6 +39,7 @@ import { CHATGPT_URL, CONVERSATION_TURN_SELECTOR, DEFAULT_MODEL_STRATEGY } from 
 import type { LaunchedChrome } from 'chrome-launcher';
 import { BrowserAutomationError } from '../oracle/errors.js';
 import { alignPromptEchoPair, buildPromptEchoMatcher } from './reattachHelpers.js';
+import { getOracleHomeDir } from '../oracleHome.js';
 import {
   cleanupStaleProfileState,
   readChromePid,
@@ -129,10 +130,10 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
   const manualLogin = Boolean(config.manualLogin);
   const manualProfileDir = config.manualLoginProfileDir
     ? path.resolve(config.manualLoginProfileDir)
-    : path.join(os.homedir(), '.oracle', 'browser-profile');
+    : path.join(getOracleHomeDir(), 'browser-profile');
   const userDataDir = manualLogin
     ? manualProfileDir
-    : await mkdtemp(path.join(await resolveUserDataBaseDir(), 'oracle-browser-'));
+    : await mkdtemp(path.join(await resolveUserDataBaseDir(), 'concierge-browser-'));
   if (manualLogin) {
     // Learned: manual login reuses a persistent profile so cookies/SSO survive.
     await mkdir(userDataDir, { recursive: true });
@@ -197,7 +198,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       client?.on('disconnect', () => {
         connectionClosedUnexpectedly = true;
         logger('Chrome window closed; attempting to abort run.');
-        reject(new Error('Chrome window closed before oracle finished. Please keep it open until completion.'));
+        reject(new Error('Chrome window closed before Concierge finished. Please keep it open until completion.'));
       });
     });
     const raceWithDisconnect = <T>(promise: Promise<T>): Promise<T> =>
@@ -272,7 +273,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
           details: {
             profile: config.chromeProfile ?? 'Default',
             cookiePath: config.chromeCookiePath ?? null,
-            hint: 'If macOS Keychain prompts or denies access, run oracle from a GUI session or use --copy/--render for the manual flow.',
+            hint: 'If macOS Keychain prompts or denies access, run concierge from a GUI session or use --copy/--render for the manual flow.',
           },
         },
       );
@@ -736,7 +737,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     }
     await emitRuntimeHint();
     throw new BrowserAutomationError(
-      'Chrome window closed before oracle finished. Please keep it open until completion.',
+      'Chrome window closed before Concierge finished. Please keep it open until completion.',
       {
         stage: 'connection-lost',
         runtime: {
@@ -1502,7 +1503,7 @@ function describeDevtoolsFirewallHint(host: string, port: number): string | null
     `New-NetFirewallRule -DisplayName 'Chrome DevTools ${port}' -Direction Inbound -Action Allow -Protocol TCP -LocalPort ${port}`,
     "New-NetFirewallRule -DisplayName 'Chrome DevTools (chrome.exe)' -Direction Inbound -Action Allow -Program 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' -Protocol TCP",
     '',
-    'Re-run the same oracle command after adding the rule.',
+    'Re-run the same concierge command after adding the rule.',
   ].join('\n');
 }
 

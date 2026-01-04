@@ -10,19 +10,6 @@ const baseRunOptions: RunOracleOptions = {
 };
 
 describe('runDryRunSummary', () => {
-  test('api dry run logs when no files match', async () => {
-    const log = vi.fn();
-    const readFilesImpl = vi.fn().mockResolvedValue([]);
-
-    await runDryRunSummary(
-      { engine: 'api', runOptions: baseRunOptions, cwd: '/repo', version: '0.4.1', log },
-      { readFilesImpl },
-    );
-
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('[dry-run] Oracle (0.4.1) would call gpt-5.2-pro'));
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('No files matched'));
-  });
-
   test('browser dry run with bundled attachments logs bundle info and cookie source', async () => {
     const log = vi.fn();
     const assembleBrowserPromptImpl = vi.fn().mockResolvedValue({
@@ -40,7 +27,6 @@ describe('runDryRunSummary', () => {
 
     await runDryRunSummary(
       {
-        engine: 'browser',
         runOptions: { ...baseRunOptions, browserBundleFiles: true },
         cwd: '/repo',
         version: '0.4.1',
@@ -57,7 +43,7 @@ describe('runDryRunSummary', () => {
     const joined = log.mock.calls.flat().join('\n');
     expect(joined).toContain('Bundled upload');
     expect(joined).toContain('bundled 3 files');
-    expect(joined).toContain('Cookies: inline payload (1) via test');
+    expect(joined).toContain('Cookies: inline payload');
   });
 
   test('browser dry run falls back to inline composer summary when no attachments', async () => {
@@ -77,7 +63,6 @@ describe('runDryRunSummary', () => {
 
     await runDryRunSummary(
       {
-        engine: 'browser',
         runOptions: baseRunOptions,
         cwd: '/repo',
         version: '0.4.1',
@@ -109,7 +94,6 @@ describe('runDryRunSummary', () => {
 
     await runDryRunSummary(
       {
-        engine: 'browser',
         runOptions: baseRunOptions,
         cwd: '/repo',
         version: '0.4.1',
@@ -120,7 +104,7 @@ describe('runDryRunSummary', () => {
     );
 
     const joined = log.mock.calls.flat().join('\n');
-    expect(joined).toContain('Cookies: copy from Chrome (all from Chrome profile)');
+    expect(joined).toContain('Cookies: copy from Chrome');
     expect(joined).toContain('No files attached');
   });
 

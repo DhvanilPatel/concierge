@@ -11,18 +11,6 @@ importers:
 
   .:
     dependencies:
-      '@anthropic-ai/tokenizer':
-        specifier: ^0.0.4
-        version: 0.0.4
-      '@google/genai':
-        specifier: ^1.34.0
-        version: 1.34.0(@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.3))
-      '@google/generative-ai':
-        specifier: ^0.24.1
-        version: 0.24.1
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.25.1
-        version: 1.25.1(hono@4.11.1)(zod@4.3.3)
       '@steipete/sweet-cookie':
         specifier: ^0.1.0
         version: 0.1.0
@@ -62,9 +50,6 @@ importers:
       markdansi:
         specifier: 0.2.0
         version: 0.2.0
-      openai:
-        specifier: ^6.15.0
-        version: 6.15.0(ws@8.18.3)(zod@4.3.3)
       osc-progress:
         specifier: ^0.2.0
         version: 0.2.0

@@ -14,21 +14,21 @@ ptyDescribe('TUI (interactive, PTY)', () => {
     async () => {
       const { output, exitCode, homeDir } = await runOracleTuiWithPty({
         steps: [
-          // Move to the Exit row (ask oracle -> ask oracle -> newer/reset -> exit). Extra downs are harmless.
+          // Move to the Exit row (ask concierge -> ask concierge -> newer/reset -> exit). Extra downs are harmless.
           { match: 'Select a session or action', write: '\u001b[B\u001b[B\u001b[B\u001b[B\u001b[B\u001b[B\r' },
         ],
       });
       await fs.rm(homeDir, { recursive: true, force: true }).catch(() => {});
 
       expect(exitCode).toBe(0);
-      expect(output).toContain('🧿 oracle');
+      expect(output).toContain('🛎️ concierge');
       expect(output.toLowerCase()).toContain('closing the book');
     },
     20_000,
   );
 
   it(
-    'prints the oracle header only once when forcing the TUI',
+    'prints the concierge header only once when forcing the TUI',
     async () => {
       const { output, homeDir } = await runOracleTuiWithPty({
         steps: [
@@ -37,7 +37,7 @@ ptyDescribe('TUI (interactive, PTY)', () => {
       });
       await fs.rm(homeDir, { recursive: true, force: true }).catch(() => {});
 
-      const headerCount = (output.match(/🧿 oracle/g) ?? []).length;
+      const headerCount = (output.match(/🛎️ concierge/g) ?? []).length;
       expect(headerCount).toBe(1);
       expect(output).not.toContain('__disabled__');
       expect(output).not.toContain('(Disabled)');
@@ -48,14 +48,14 @@ ptyDescribe('TUI (interactive, PTY)', () => {
   it(
     'lists recent sessions without disabled placeholders or duplicate headers',
     async () => {
-      const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'oracle-tui-sessions-'));
+      const homeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'concierge-tui-sessions-'));
       try {
         const { sessionStore } = await import('../../../src/sessionStore.ts');
         setOracleHomeDirOverrideForTest(homeDir);
 
-	        await sessionStore.ensureStorage();
-	        await sessionStore.createSession({ prompt: 'one', model: 'gpt-5.1' }, process.cwd());
-	        await sessionStore.createSession({ prompt: 'two', model: 'gpt-5.2-pro' }, process.cwd());
+        await sessionStore.ensureStorage();
+        await sessionStore.createSession({ prompt: 'one', model: 'gpt-5.1' }, process.cwd());
+        await sessionStore.createSession({ prompt: 'two', model: 'gpt-5.2-pro' }, process.cwd());
 
         const { output } = await runOracleTuiWithPty({
           homeDir,

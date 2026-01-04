@@ -7,34 +7,20 @@ const envWithoutKey = { ...process.env } as NodeJS.ProcessEnv;
 delete envWithoutKey.OPENAI_API_KEY;
 
 describe('resolveEngine', () => {
-  it('prefers api when no flags and OPENAI_API_KEY is set', () => {
-    const engine = resolveEngine({ engine: undefined, browserFlag: false, env: envWithKey });
-    expect(engine).toBe<EngineMode>('api');
-  });
-
-  it('falls back to browser when no flags and no OPENAI_API_KEY', () => {
-    const engine = resolveEngine({ engine: undefined, browserFlag: false, env: envWithoutKey });
-    expect(engine).toBe<EngineMode>('browser');
-  });
-
-  it('respects explicit --engine api even without OPENAI_API_KEY', () => {
-    const engine = resolveEngine({ engine: 'api', browserFlag: false, env: envWithoutKey });
-    expect(engine).toBe<EngineMode>('api');
-  });
-
-  it('lets legacy --browser override everything', () => {
-    const engine = resolveEngine({ engine: 'api', browserFlag: true, env: envWithKey });
-    expect(engine).toBe<EngineMode>('browser');
+  it('always resolves to browser in browser-only builds', () => {
+    const engine1 = resolveEngine({ engine: undefined, browserFlag: false, env: envWithKey });
+    const engine2 = resolveEngine({ engine: 'api' as EngineMode, browserFlag: false, env: envWithoutKey });
+    const engine3 = resolveEngine({ engine: 'browser' as EngineMode, browserFlag: true, env: envWithoutKey });
+    expect(engine1).toBe<EngineMode>('browser');
+    expect(engine2).toBe<EngineMode>('browser');
+    expect(engine3).toBe<EngineMode>('browser');
   });
 });
 
 describe('defaultWaitPreference', () => {
-  it('disables wait for pro API runs', () => {
-    expect(defaultWaitPreference('gpt-5.2-pro', 'api')).toBe(false);
-  });
-
-  it('keeps wait enabled for Codex and browser models', () => {
-    expect(defaultWaitPreference('gpt-5.1-codex', 'api')).toBe(true);
+  it('defaults to waiting for browser runs', () => {
     expect(defaultWaitPreference('gpt-5.2-pro', 'browser')).toBe(true);
+    expect(defaultWaitPreference('gemini-3-pro', 'browser')).toBe(true);
+    expect(defaultWaitPreference('gpt-5.2-pro', 'api')).toBe(true);
   });
 });

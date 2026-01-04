@@ -34,7 +34,7 @@ describe('sessionDisplay helpers', () => {
     await showStatus({ hours: 24, includeAll: false, limit: 10, showExamples: true });
 
     expect(log).toHaveBeenCalledWith(
-      expect.stringContaining('Tip: Run "oracle session --clear --hours 24" to prune cached runs'),
+      expect.stringContaining('Tip: Run "concierge session --clear --hours 24" to prune cached runs'),
     );
     log.mockRestore();
   }, 15_000);
@@ -101,7 +101,7 @@ describe('sessionDisplay helpers', () => {
       status: 'completed',
       createdAt: started,
       model: 'gpt-5.1',
-      mode: 'api',
+      mode: 'browser',
       elapsedMs: 1500,
       usage: { inputTokens: 10, outputTokens: 20, reasoningTokens: 0, totalTokens: 30, cost: 0.02 },
       options: { file: ['a'] },

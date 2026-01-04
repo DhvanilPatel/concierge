@@ -4,7 +4,6 @@ import path from 'node:path';
 
 export default defineConfig({
   test: {
-    setupFiles: ['tests/setup-env.ts', 'tests/cli/runOracle/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
@@ -22,8 +21,7 @@ export default defineConfig({
         'src/browser/chromeLifecycle.ts',
         'src/browserMode.ts',
         'src/oracle.ts',
-        'src/oracle/modelRunner.ts',
-        'src/oracle/stringifier.ts',
+        'src/oracle/tokenStringifier.ts',
         'src/oracle/types.ts',
         'src/types/**',
       ],

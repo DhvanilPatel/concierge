@@ -6,9 +6,9 @@ import { getCliVersion } from '../../src/version.js';
 
 const execFileAsync = promisify(execFile);
 
-describe('oracle --version', () => {
+describe('concierge --version', () => {
   test('prints the package.json version', async () => {
-    const cliEntrypoint = path.join(process.cwd(), 'bin', 'oracle-cli.ts');
+    const cliEntrypoint = path.join(process.cwd(), 'bin', 'concierge-cli.ts');
     const tsxCli = path.join(process.cwd(), 'node_modules', 'tsx', 'dist', 'cli.mjs');
     const { stdout } = await execFileAsync(process.execPath, [tsxCli, cliEntrypoint, '--version'], {
       // biome-ignore lint/style/useNamingConvention: environment variable name

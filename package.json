@@ -18,9 +18,8 @@
     "lint": "pnpm run typecheck && biome lint .",
     "test": "vitest run",
     "test:browser": "pnpm run build && tsx scripts/test-browser.ts && ./scripts/browser-smoke.sh",
-    "test:live": "ORACLE_LIVE_TEST=1 vitest run tests/live --exclude tests/live/openai-live.test.ts",
+    "test:live": "ORACLE_LIVE_TEST=1 vitest run tests/live",
     "test:live:fast": "ORACLE_LIVE_TEST=1 ORACLE_LIVE_TEST_FAST=1 vitest run tests/live/browser-fast-live.test.ts",
-    "test:pro": "ORACLE_LIVE_TEST=1 vitest run tests/live/openai-live.test.ts",
     "test:coverage": "vitest run --coverage",
     "prepare": "pnpm run build"
   },
@@ -56,9 +55,6 @@
   },
   "homepage": "https://github.com/DhvanilPatel/concierge#readme",
   "dependencies": {
-    "@anthropic-ai/tokenizer": "^0.0.4",
-    "@google/genai": "^1.34.0",
-    "@google/generative-ai": "^0.24.1",
     "@steipete/sweet-cookie": "^0.1.0",
     "chalk": "^5.6.2",
     "chrome-launcher": "^1.2.1",
@@ -72,7 +68,6 @@
     "json5": "^2.2.3",
     "kleur": "^4.1.5",
     "markdansi": "0.2.0",
-    "openai": "^6.15.0",
     "osc-progress": "^0.2.0",
     "qs": "^6.14.1",
     "shiki": "^3.20.0",
@@ -81,7 +76,6 @@
     "zod": "^4.3.3"
   },
   "devDependencies": {
-    "@anthropic-ai/tokenizer": "^0.0.4",
     "@biomejs/biome": "^2.3.10",
     "@cdktf/node-pty-prebuilt-multiarch": "0.10.2",
     "@types/chrome-remote-interface": "^0.33.0",
