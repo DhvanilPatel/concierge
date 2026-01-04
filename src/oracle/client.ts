@@ -74,8 +74,8 @@ export function createDefaultClientFactory(): ClientFactory {
 
 function buildOpenRouterHeaders(): Record<string, string> | undefined {
   const headers: Record<string, string> = {};
-  const referer = process.env.OPENROUTER_REFERER ?? process.env.OPENROUTER_HTTP_REFERER ?? 'https://github.com/steipete/oracle';
-  const title = process.env.OPENROUTER_TITLE ?? 'Oracle CLI';
+  const referer = process.env.OPENROUTER_REFERER ?? process.env.OPENROUTER_HTTP_REFERER ?? 'https://github.com/DhvanilPatel/concierge';
+  const title = process.env.OPENROUTER_TITLE ?? 'Concierge';
   if (referer) {
     headers['HTTP-Referer'] = referer;
   }
