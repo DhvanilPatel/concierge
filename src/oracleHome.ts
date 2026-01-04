@@ -12,11 +12,9 @@ export function setConciergeHomeDirOverrideForTest(dir: string | null): void {
 }
 
 export function getConciergeHomeDir(): string {
-  // Support legacy ORACLE_HOME_DIR for backwards compatibility
-  return conciergeHomeDirOverride ?? process.env.CONCIERGE_HOME_DIR ?? process.env.ORACLE_HOME_DIR ?? path.join(os.homedir(), '.concierge');
+  return conciergeHomeDirOverride ?? process.env.CONCIERGE_HOME_DIR ?? path.join(os.homedir(), '.concierge');
 }
 
-// Legacy aliases for backwards compatibility
+// Legacy exports (internal code still references these names)
 export const setOracleHomeDirOverrideForTest = setConciergeHomeDirOverrideForTest;
 export const getOracleHomeDir = getConciergeHomeDir;
-
