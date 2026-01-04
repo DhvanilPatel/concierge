@@ -200,7 +200,7 @@ async function showSessionDetail(sessionId: string): Promise<void> {
 
     await renderSessionLog(sessionId);
 
-    const isRunning = meta.status === 'running';
+    const isRunning = meta.status === 'running' || meta.status === 'disconnected';
     const modelActions =
       meta.models?.map((run) => ({
         name: `View ${run.model} log (${run.status})`,

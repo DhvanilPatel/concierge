@@ -107,7 +107,11 @@ export async function attachSession(sessionId: string, options?: AttachSessionOp
     process.exitCode = 1;
     return;
   }
-  if (metadata.mode === 'browser' && metadata.status === 'running' && !metadata.browser?.runtime) {
+  if (
+    metadata.mode === 'browser' &&
+    (metadata.status === 'running' || metadata.status === 'disconnected') &&
+    !metadata.browser?.runtime
+  ) {
     await wait(250);
     const refreshed = await sessionStore.readSession(sessionId);
     if (refreshed) {
@@ -132,13 +136,15 @@ export async function attachSession(sessionId: string, options?: AttachSessionOp
   const controllerAlive = isProcessAlive(runtime?.controllerPid);
 
   const hasChromeDisconnect = metadata.response?.incompleteReason === 'chrome-disconnected';
-  const statusAllowsReattach = metadata.status === 'running' || (metadata.status === 'error' && hasChromeDisconnect);
+  const isDisconnected = metadata.status === 'disconnected';
+  const statusAllowsReattach =
+    metadata.status === 'running' || isDisconnected || (metadata.status === 'error' && hasChromeDisconnect);
   const hasFallbackSessionInfo = Boolean(runtime?.chromePort || runtime?.tabUrl || runtime?.conversationId);
   const canReattach =
     statusAllowsReattach &&
     metadata.mode === 'browser' &&
     hasFallbackSessionInfo &&
-    (hasChromeDisconnect || (runtime?.controllerPid && !controllerAlive));
+    (hasChromeDisconnect || isDisconnected || (runtime?.controllerPid && !controllerAlive));
 
   if (canReattach) {
     const portInfo = runtime?.chromePort ? `port ${runtime.chromePort}` : 'unknown port';
@@ -355,13 +361,17 @@ export async function attachSession(sessionId: string, options?: AttachSessionOp
     if (!latest) {
       break;
     }
-    if (latest.status === 'completed' || latest.status === 'error') {
+    if (latest.status === 'completed' || latest.status === 'error' || latest.status === 'disconnected') {
       await printNew();
       flushRemainder();
       if (!options?.suppressMetadata) {
         if (latest.status === 'error' && latest.errorMessage) {
           console.log('\nResult:');
           console.log(`Session failed: ${latest.errorMessage}`);
+        }
+        if (latest.status === 'disconnected') {
+          console.log('\nResult:');
+          console.log(`Session disconnected: ${latest.errorMessage ?? 'Chrome disconnected before completion.'}`);
         }
         if (latest.status === 'completed' && latest.usage) {
           const summary = formatCompletionSummary(latest, { includeSlug: true });
@@ -447,6 +457,9 @@ export function buildReattachLine(metadata: SessionMetadata): string | null {
   }
   if (metadata.status === 'running') {
     return `Session ${metadata.id} reattached, request started ${elapsedLabel} ago.`;
+  }
+  if (metadata.status === 'disconnected') {
+    return `Session ${metadata.id} disconnected, request started ${elapsedLabel} ago.`;
   }
   return null;
 }

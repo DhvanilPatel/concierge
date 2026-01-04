@@ -45,7 +45,7 @@ describe('browser reattach end-to-end (simulated)', () => {
         startedAt: new Date().toISOString(),
       });
       await sessionStore.updateSession(sessionMeta.id, {
-        status: 'running',
+        status: 'disconnected',
         startedAt: new Date().toISOString(),
         mode: 'browser',
         browser: {
@@ -57,7 +57,7 @@ describe('browser reattach end-to-end (simulated)', () => {
             tabUrl: 'https://chatgpt.com/c/demo',
           },
         },
-        response: { status: 'running', incompleteReason: 'chrome-disconnected' },
+        response: { status: 'disconnected', incompleteReason: 'chrome-disconnected' },
       });
 
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});

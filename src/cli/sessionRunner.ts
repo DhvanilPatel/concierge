@@ -125,22 +125,22 @@ export async function performSessionRun({
       userError?.category === 'browser-automation' && (userError.details as { stage?: string } | undefined)?.stage === 'connection-lost';
     if (connectionLost && mode === 'browser') {
       const runtime = (userError.details as { runtime?: BrowserRuntimeMetadata } | undefined)?.runtime;
-      log(dim('Chrome disconnected before completion; keeping session running for reattach.'));
+      log(dim('Chrome disconnected before completion; marking session disconnected for reattach.'));
       if (modelForStatus) {
         await sessionStore.updateModelRun(sessionMeta.id, modelForStatus, {
-          status: 'running',
+          status: 'disconnected',
           completedAt: undefined,
         });
       }
       await sessionStore.updateSession(sessionMeta.id, {
-        status: 'running',
+        status: 'disconnected',
         errorMessage: message,
         mode,
         browser: {
           config: browserConfig,
           runtime: runtime ?? sessionMeta.browser?.runtime,
         },
-        response: { status: 'running', incompleteReason: 'chrome-disconnected' },
+        response: { status: 'disconnected', incompleteReason: 'chrome-disconnected' },
       });
       return;
     }

@@ -7,7 +7,7 @@ import { estimateUsdCost } from 'tokentally';
 const isRich = (rich?: boolean): boolean => rich ?? Boolean(process.stdout.isTTY && chalk.level > 0);
 const dim = (text: string, rich: boolean): string => (rich ? kleur.dim(text) : text);
 
-export const STATUS_PAD = 9;
+export const STATUS_PAD = 12;
 export const MODEL_PAD = 13;
 export const MODE_PAD = 7;
 export const TIMESTAMP_PAD = 19;
@@ -97,6 +97,8 @@ function colorStatus(status: string, rich: boolean): string {
     case 'error':
       return chalk.red(padded);
     case 'running':
+      return chalk.yellow(padded);
+    case 'disconnected':
       return chalk.yellow(padded);
     default:
       return padded;

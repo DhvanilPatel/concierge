@@ -127,7 +127,7 @@ export interface SessionMetadata {
   error?: SessionUserErrorMetadata;
 }
 
-export type SessionStatus = 'pending' | 'running' | 'completed' | 'error' | 'cancelled';
+export type SessionStatus = 'pending' | 'running' | 'disconnected' | 'completed' | 'error' | 'cancelled';
 
 export interface SessionModelRun {
   model: string;
@@ -696,7 +696,10 @@ async function markZombie(meta: SessionMetadata, { persist }: { persist: boolean
 }
 
 async function markDeadBrowser(meta: SessionMetadata, { persist }: { persist: boolean }): Promise<SessionMetadata> {
-  if (meta.status !== 'running' || meta.mode !== 'browser') {
+  if (meta.mode !== 'browser') {
+    return meta;
+  }
+  if (meta.status !== 'running' && meta.status !== 'disconnected') {
     return meta;
   }
   const runtime = meta.browser?.runtime;

@@ -18,7 +18,9 @@ export async function shouldBlockDuplicatePrompt({
   const normalized = prompt?.trim();
   if (!normalized) return false;
 
-  const running = (await sessionStore.listSessions()).filter((entry) => entry.status === 'running');
+  const running = (await sessionStore.listSessions()).filter(
+    (entry) => entry.status === 'running' || entry.status === 'disconnected',
+  );
   const duplicate = running.find(
     (entry: SessionMetadata) => (entry.options?.prompt?.trim?.() ?? '') === normalized,
   );

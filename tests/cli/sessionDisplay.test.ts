@@ -108,7 +108,7 @@ describe('formatUserErrorMetadata', () => {
 });
 
 describe('buildReattachLine', () => {
-  test('returns message only when session running', () => {
+  test('returns message for running sessions', () => {
     const now = Date.UTC(2025, 0, 1, 12, 0, 0);
     vi.setSystemTime(now);
     const metadata: SessionMetadata = {
@@ -118,6 +118,18 @@ describe('buildReattachLine', () => {
       options: {},
     };
     expect(buildReattachLine(metadata)).toBe('Session session-123 reattached, request started 30s ago.');
+  });
+
+  test('returns message for disconnected sessions', () => {
+    const now = Date.UTC(2025, 0, 1, 12, 0, 0);
+    vi.setSystemTime(now);
+    const metadata: SessionMetadata = {
+      id: 'session-124',
+      createdAt: new Date(now - 45_000).toISOString(),
+      status: 'disconnected',
+      options: {},
+    };
+    expect(buildReattachLine(metadata)).toBe('Session session-124 disconnected, request started 45s ago.');
   });
 
   test('returns null for completed sessions', () => {
