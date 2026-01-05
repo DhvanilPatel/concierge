@@ -1,7 +1,8 @@
-import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, rename, rm, stat, unlink, mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import net from 'node:net';
+import { createHash } from 'node:crypto';
 import { resolveBrowserConfig } from './config.js';
 import type { BrowserRunOptions, BrowserRunResult, BrowserLogger, ChromeClient, BrowserAttachment } from './types.js';
 import {
@@ -34,7 +35,7 @@ import {
 } from './pageActions.js';
 import { uploadAttachmentViaDataTransfer } from './actions/remoteFileTransfer.js';
 import { ensureThinkingTime } from './actions/thinkingTime.js';
-import { waitForAssistantImages } from './actions/assistantImages.js';
+import { clickAssistantImageDownload, waitForAssistantImages } from './actions/assistantImages.js';
 import { estimateTokenCount, withRetries, delay } from './utils.js';
 import { formatElapsed } from '../concierge/format.js';
 import { CHATGPT_URL, CHATGPT_IMAGES_URL, CONVERSATION_TURN_SELECTOR, COOKIE_URLS, DEFAULT_MODEL_STRATEGY } from './constants.js';
@@ -725,6 +726,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       const imageResult = await captureGeneratedImage({
         Runtime,
         Network,
+        Page,
         logger,
         outputPath: imageOutputPath,
         timeoutMs: responseTimeoutMs,
@@ -1307,6 +1309,7 @@ async function runRemoteBrowserMode(
       const imageResult = await captureGeneratedImage({
         Runtime,
         Network,
+        Page,
         logger,
         outputPath: imageOutputPath,
         timeoutMs: responseTimeoutMs,
@@ -1512,6 +1515,7 @@ function isChatGptImagesUrl(url: string | undefined | null): boolean {
 async function captureGeneratedImage({
   Runtime,
   Network,
+  Page,
   logger,
   outputPath,
   timeoutMs,
@@ -1520,6 +1524,7 @@ async function captureGeneratedImage({
 }: {
   Runtime: ChromeClient['Runtime'];
   Network: ChromeClient['Network'];
+  Page: ChromeClient['Page'];
   logger: BrowserLogger;
   outputPath: string;
   timeoutMs: number;
@@ -1531,6 +1536,19 @@ async function captureGeneratedImage({
   if (!snapshot.urls.length) {
     throw new Error('No images generated.');
   }
+  const preferredUrl = snapshot.urls[0];
+  const uiDownloaded = await tryDownloadImageViaUi({
+    Runtime,
+    Page,
+    logger,
+    outputPath,
+    timeoutMs,
+    minTurnIndex,
+    preferredUrl,
+  });
+  if (uiDownloaded) {
+    return { imageCount: snapshot.urls.length, outputPath };
+  }
   const cookieHeader = await buildCookieHeader(Network, referer, logger);
   const userAgent = await readUserAgent(Runtime);
   const pageUrl = await readPageUrl(Runtime);
@@ -1538,13 +1556,14 @@ async function captureGeneratedImage({
   let lastError: Error | null = null;
   for (const url of snapshot.urls) {
     try {
-      await downloadChatGptImage({
+      await downloadChatGptImageWithStability({
         Runtime,
         url,
         outputPath,
         cookieHeader,
         userAgent,
         referer: refererUrl,
+        logger,
       });
       return { imageCount: snapshot.urls.length, outputPath };
     } catch (error) {
@@ -1601,6 +1620,160 @@ async function buildCookieHeader(
       logger(`[browser] Failed to read cookies for image download: ${error instanceof Error ? error.message : String(error)}`);
     }
     return '';
+  }
+}
+
+async function tryDownloadImageViaUi({
+  Runtime,
+  Page,
+  logger,
+  outputPath,
+  timeoutMs,
+  minTurnIndex,
+  preferredUrl,
+}: {
+  Runtime: ChromeClient['Runtime'];
+  Page: ChromeClient['Page'];
+  logger: BrowserLogger;
+  outputPath: string;
+  timeoutMs: number;
+  minTurnIndex?: number;
+  preferredUrl?: string;
+}): Promise<boolean> {
+  const downloadDir = await mkdtemp(path.join(os.tmpdir(), 'concierge-image-')).catch(() => null);
+  if (!downloadDir) {
+    return false;
+  }
+  try {
+    await Page.setDownloadBehavior({ behavior: 'allow', downloadPath: downloadDir });
+    let clicked = false;
+    const uiStart = Date.now();
+    const uiDeadline = uiStart + Math.min(timeoutMs, 45_000);
+    let preferUrl = true;
+    while (Date.now() < uiDeadline) {
+      clicked = await clickAssistantImageDownload(
+        Runtime,
+        logger,
+        minTurnIndex,
+        preferUrl ? preferredUrl : undefined,
+      );
+      if (clicked) break;
+      if (preferUrl && Date.now() - uiStart > 20_000) {
+        // After a brief wait, allow any download button in case the final asset has a new URL.
+        preferUrl = false;
+      }
+      await delay(1000);
+    }
+    if (!clicked) {
+      const navigated = await ensureImagesSurface(Runtime, Page, logger);
+      if (navigated) {
+        const surfaceDeadline = Date.now() + 15_000;
+        while (Date.now() < surfaceDeadline) {
+          clicked = await clickAssistantImageDownload(Runtime, logger, undefined, preferredUrl);
+          if (clicked) break;
+          await delay(1000);
+        }
+      }
+    }
+    if (!clicked) {
+      return false;
+    }
+    const downloaded = await waitForDownloadedFile(downloadDir, Math.min(timeoutMs, 60_000), logger);
+    if (!downloaded) {
+      return false;
+    }
+    await mkdir(path.dirname(outputPath), { recursive: true });
+    await replaceFile(downloaded, outputPath);
+    if (logger?.verbose) {
+      logger('[browser] Downloaded image via ChatGPT UI button');
+    }
+    return true;
+  } catch (error) {
+    if (logger?.verbose) {
+      logger(`[browser] Download button flow failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return false;
+  } finally {
+    await rm(downloadDir, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
+
+async function waitForDownloadedFile(
+  downloadDir: string,
+  timeoutMs: number,
+  logger?: BrowserLogger,
+): Promise<string | null> {
+  const deadline = Date.now() + Math.max(0, timeoutMs);
+  let lastPath: string | null = null;
+  let lastSize = 0;
+  while (Date.now() < deadline) {
+    const entries = await readdir(downloadDir).catch(() => []);
+    const files = [];
+    for (const name of entries) {
+      if (name.endsWith('.crdownload') || name.endsWith('.tmp')) continue;
+      const fullPath = path.join(downloadDir, name);
+      const info = await stat(fullPath).catch(() => null);
+      if (!info || !info.isFile()) continue;
+      files.push({ path: fullPath, size: info.size, mtimeMs: info.mtimeMs });
+    }
+    if (files.length > 0) {
+      files.sort((a, b) => b.mtimeMs - a.mtimeMs);
+      const candidate = files[0];
+      if (candidate.size > 0 && candidate.path === lastPath && candidate.size === lastSize) {
+        return candidate.path;
+      }
+      lastPath = candidate.path;
+      lastSize = candidate.size;
+    }
+    await delay(400);
+  }
+  if (logger?.verbose) {
+    logger('[browser] Download button did not yield a finished file before timeout');
+  }
+  return null;
+}
+
+async function ensureImagesSurface(
+  Runtime: ChromeClient['Runtime'],
+  Page: ChromeClient['Page'],
+  logger: BrowserLogger,
+): Promise<boolean> {
+  const currentUrl = await readPageUrl(Runtime);
+  if (currentUrl && currentUrl.includes('/images')) {
+    return true;
+  }
+  try {
+    await Page.navigate({ url: CHATGPT_IMAGES_URL });
+    const deadline = Date.now() + 15_000;
+    while (Date.now() < deadline) {
+      const { result } = await Runtime.evaluate({ expression: 'document.readyState', returnByValue: true });
+      if (result?.value === 'complete' || result?.value === 'interactive') {
+        break;
+      }
+      await delay(250);
+    }
+    await delay(1500);
+    return true;
+  } catch (error) {
+    if (logger?.verbose) {
+      logger(`[browser] Failed to navigate back to images surface: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return false;
+  }
+}
+
+async function replaceFile(sourcePath: string, destPath: string): Promise<void> {
+  await rm(destPath, { force: true }).catch(() => undefined);
+  try {
+    await rename(sourcePath, destPath);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException | null)?.code;
+    if (code === 'EXDEV') {
+      await copyFile(sourcePath, destPath);
+      await unlink(sourcePath).catch(() => undefined);
+      return;
+    }
+    throw error;
   }
 }
 
@@ -1664,6 +1837,54 @@ async function downloadChatGptImage({
   const data = new Uint8Array(await res.arrayBuffer());
   await mkdir(path.dirname(outputPath), { recursive: true });
   await writeFile(outputPath, data);
+}
+
+async function hashFileContents(filePath: string): Promise<string> {
+  const data = await readFile(filePath);
+  return createHash('sha256').update(data).digest('hex');
+}
+
+async function downloadChatGptImageWithStability({
+  Runtime,
+  url,
+  outputPath,
+  cookieHeader,
+  userAgent,
+  referer,
+  logger,
+}: {
+  Runtime: ChromeClient['Runtime'];
+  url: string;
+  outputPath: string;
+  cookieHeader: string;
+  userAgent?: string;
+  referer?: string;
+  logger?: BrowserLogger;
+}): Promise<void> {
+  const maxAttempts = 3;
+  const settleDelayMs = 2500;
+  let lastHash: string | null = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    await downloadChatGptImage({
+      Runtime,
+      url,
+      outputPath,
+      cookieHeader,
+      userAgent,
+      referer,
+    });
+    const hash = await hashFileContents(outputPath);
+    if (lastHash && hash === lastHash) {
+      if (logger?.verbose) {
+        logger(`[browser] Image download stabilized after ${attempt + 1} attempts`);
+      }
+      return;
+    }
+    lastHash = hash;
+    if (attempt < maxAttempts - 1) {
+      await delay(settleDelayMs);
+    }
+  }
 }
 
 function decodeDataUrl(url: string): Uint8Array {
