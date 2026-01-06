@@ -412,9 +412,9 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     } else if (modelStrategy === 'ignore') {
       logger('Model picker: skipped (strategy=ignore)');
     }
-    // Handle thinking time selection if specified
+    // Handle thinking time selection if specified (skip for image generation - images page has no thinking chip)
     const thinkingTime = config.thinkingTime;
-    if (thinkingTime) {
+    if (thinkingTime && !skipModelSelection) {
       await raceWithDisconnect(
         withRetries(() => ensureThinkingTime(Runtime, thinkingTime, logger), {
           retries: 2,
@@ -1081,9 +1081,9 @@ async function runRemoteBrowserMode(
     } else if (modelStrategy === 'ignore') {
       logger('Model picker: skipped (strategy=ignore)');
     }
-    // Handle thinking time selection if specified
+    // Handle thinking time selection if specified (skip for image generation - images page has no thinking chip)
     const thinkingTime = config.thinkingTime;
-    if (thinkingTime) {
+    if (thinkingTime && !skipModelSelection) {
       await withRetries(() => ensureThinkingTime(Runtime, thinkingTime, logger), {
         retries: 2,
         delayMs: 300,
