@@ -152,6 +152,9 @@ export async function runBrowserSessionExecution(
       chromeHost: browserResult.chromeHost,
       userDataDir: browserResult.userDataDir,
       controllerPid: browserResult.controllerPid ?? process.pid,
+      tabUrl: browserResult.tabUrl,
+      conversationId: browserResult.conversationId,
+      chromeTargetId: browserResult.chromeTargetId,
     },
     answerText,
   };

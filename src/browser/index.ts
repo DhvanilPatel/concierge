@@ -746,6 +746,10 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       throw new Error('Chrome disconnected before completion');
     }
     stopThinkingMonitor?.();
+    // Ensure conversation URL hint completes before returning so tabUrl/conversationId are captured.
+    if (conversationHintInFlight) {
+      await conversationHintInFlight.catch(() => {});
+    }
     runStatus = 'complete';
     const durationMs = Date.now() - startedAt;
     const answerChars = answerText.length;
@@ -763,6 +767,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       userDataDir,
       chromeTargetId: lastTargetId,
       tabUrl: lastUrl,
+      conversationId: lastUrl ? extractConversationIdFromUrl(lastUrl) : undefined,
       controllerPid: process.pid,
     };
   } catch (error) {
