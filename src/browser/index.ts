@@ -896,7 +896,7 @@ async function waitForLogin({
     await ensureLoggedIn(runtime, logger, { appliedCookies });
     return;
   }
-  const deadline = Date.now() + Math.min(timeoutMs ?? 1_200_000, 20 * 60_000);
+  const deadline = Date.now() + Math.min(timeoutMs ?? 2_400_000, 40 * 60_000);
   let lastNotice = 0;
   while (Date.now() < deadline) {
     try {

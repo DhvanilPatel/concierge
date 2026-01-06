@@ -22,7 +22,7 @@ Concierge reads an optional per-user config from `~/.concierge/config.json`. The
     chatgptUrl: "https://chatgpt.com/", // root is fine; folder URLs also work
     url: null,              // alias for chatgptUrl (kept for back-compat)
     debugPort: null,        // fixed DevTools port (env: CONCIERGE_BROWSER_PORT / CONCIERGE_BROWSER_DEBUG_PORT)
-    timeoutMs: 1200000,
+    timeoutMs: 2400000,
     inputTimeoutMs: 30000,
     cookieSyncWaitMs: 0,    // wait (ms) before retrying cookie sync when Chrome cookies are empty/locked
     modelStrategy: "select", // select | current | ignore (ChatGPT only; ignored for Gemini web)

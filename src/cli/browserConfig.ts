@@ -8,7 +8,7 @@ import type { BrowserModelStrategy } from '../browser/types.js';
 import type { CookieParam } from '../browser/types.js';
 import { getConciergeHomeDir } from '../conciergeHome.js';
 
-const DEFAULT_BROWSER_TIMEOUT_MS = 1_200_000;
+const DEFAULT_BROWSER_TIMEOUT_MS = 2_400_000;
 const DEFAULT_BROWSER_INPUT_TIMEOUT_MS = 60_000;
 const DEFAULT_CHROME_PROFILE = 'Default';
 
