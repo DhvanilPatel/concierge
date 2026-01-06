@@ -79,8 +79,9 @@ export function applyBrowserDefaultsFromConfig(
   if (isUnset('browserModelStrategy') && browser.modelStrategy !== undefined) {
     options.browserModelStrategy = browser.modelStrategy;
   }
-  if (isUnset('browserThinkingTime') && browser.thinkingTime !== undefined) {
-    options.browserThinkingTime = browser.thinkingTime;
+  // Default thinking time to 'extended' if not set in config or CLI
+  if (isUnset('browserThinkingTime')) {
+    options.browserThinkingTime = browser.thinkingTime ?? 'extended';
   }
   if (isUnset('browserManualLogin') && browser.manualLogin !== undefined) {
     options.browserManualLogin = browser.manualLogin;

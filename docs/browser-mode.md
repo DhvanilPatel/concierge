@@ -80,7 +80,7 @@ Notes:
 - `--chatgpt-url`: override the ChatGPT base URL. Works with the root homepage (`https://chatgpt.com/`) **or** a specific workspace/folder link such as `https://chatgpt.com/g/.../project`. `--browser-url` stays as a hidden alias.
 - `--browser-timeout`, `--browser-input-timeout`: `2400s (40m)`/`30s` defaults. Durations accept `ms`, `s`, `m`, or `h` and can be chained (`1h2m10s`).
 - `--browser-model-strategy <select|current|ignore>`: control ChatGPT model selection. `select` (default) switches to the requested model; `current` keeps the active model and logs its label; `ignore` skips the picker entirely. (Ignored for Gemini web runs.)
-- `--browser-thinking-time <light|standard|extended|heavy>`: set the ChatGPT thinking-time intensity (Thinking/Pro models only). You can also set a default in `~/.concierge/config.json` via `browser.thinkingTime`.
+- **Thinking time**: defaults to `extended` for Thinking/Pro models. Configure via `browser.thinkingTime` in `~/.concierge/config.json` (options: `light`, `standard`, `extended`, `heavy`). Skipped automatically for image generation since the Images page has no thinking time selector.
 - `--browser-port <port>` (alias: `--browser-debug-port`; env: `CONCIERGE_BROWSER_PORT`/`CONCIERGE_BROWSER_DEBUG_PORT`): pin the DevTools port (handy on WSL/Windows firewalls). When omitted, a random open port is chosen.
 - `--browser-no-cookie-sync`, `--browser-manual-login` (persistent automation profile + user-driven login), `--browser-headless`, `--browser-hide-window`, `--browser-keep-browser`, and the global `-v/--verbose` flag for detailed automation logs.
 - `--browser-url`: override ChatGPT base URL if needed.

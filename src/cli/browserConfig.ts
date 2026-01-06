@@ -149,7 +149,7 @@ export async function buildBrowserConfig(options: BrowserFlagOptions): Promise<B
     // Allow cookie failures by default so runs can continue without Chrome/Keychain secrets.
     allowCookieErrors: options.browserAllowCookieErrors ?? true,
     remoteChrome,
-    thinkingTime: options.browserThinkingTime,
+    thinkingTime: options.browserThinkingTime ?? 'extended',
   };
 }
 
