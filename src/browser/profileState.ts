@@ -20,6 +20,7 @@ export function getDevToolsActivePortPaths(userDataDir: string): string[] {
 }
 
 export async function readDevToolsPort(userDataDir: string): Promise<number | null> {
+  // First, try reading from DevToolsActivePort file
   for (const candidate of getDevToolsActivePortPaths(userDataDir)) {
     try {
       const raw = await readFile(candidate, 'utf8');
@@ -32,7 +33,9 @@ export async function readDevToolsPort(userDataDir: string): Promise<number | nu
       // ignore missing/unreadable candidates
     }
   }
-  return null;
+  // Fallback: check if Chrome is running with this profile and extract port from command line.
+  // This handles the case where DevToolsActivePort was deleted but Chrome is still running.
+  return getRunningChromeDebugPort(userDataDir);
 }
 
 export async function writeDevToolsActivePort(userDataDir: string, port: number): Promise<void> {
@@ -214,4 +217,40 @@ async function isChromeUsingUserDataDir(userDataDir: string): Promise<boolean> {
     // best effort
   }
   return false;
+}
+
+/**
+ * Fallback: extract --remote-debugging-port from a running Chrome process
+ * that uses the specified --user-data-dir. This handles the case where
+ * DevToolsActivePort file is missing but Chrome is still running.
+ */
+export async function getRunningChromeDebugPort(userDataDir: string): Promise<number | null> {
+  if (process.platform === 'win32') {
+    // On Windows, process scanning via ps is not available; skip fallback.
+    return null;
+  }
+
+  try {
+    const { stdout } = await execFileAsync('ps', ['-ax', '-o', 'command='], { maxBuffer: 10 * 1024 * 1024 });
+    const lines = String(stdout ?? '').split('\n');
+    for (const line of lines) {
+      if (!line) continue;
+      const lower = line.toLowerCase();
+      // Must be a Chrome/Chromium process
+      if (!lower.includes('chrome') && !lower.includes('chromium')) continue;
+      // Must be using our specific user-data-dir
+      if (!line.includes(userDataDir) || !lower.includes('user-data-dir')) continue;
+      // Extract --remote-debugging-port=XXXXX
+      const portMatch = line.match(/--remote-debugging-port=(\d+)/);
+      if (portMatch) {
+        const port = Number.parseInt(portMatch[1], 10);
+        if (Number.isFinite(port) && port > 0) {
+          return port;
+        }
+      }
+    }
+  } catch {
+    // best effort
+  }
+  return null;
 }
