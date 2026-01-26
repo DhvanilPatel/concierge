@@ -1,16 +1,72 @@
 import path from 'node:path';
 import type { ChromeClient, BrowserAttachment, BrowserLogger } from '../types.js';
+import { BrowserAutomationError } from '../../concierge/errors.js';
 import { CONVERSATION_TURN_SELECTOR, INPUT_SELECTORS, SEND_BUTTON_SELECTORS, UPLOAD_STATUS_SELECTORS } from '../constants.js';
 import { delay } from '../utils.js';
 import { logDomFailure } from '../domDebug.js';
 import { transferAttachmentViaDataTransfer } from './attachmentDataTransfer.js';
+
+async function dismissDuplicateUploadDialog(
+  runtime: ChromeClient['Runtime'],
+  logger?: BrowserLogger,
+): Promise<boolean> {
+  const outcome = await runtime
+    .evaluate({
+      expression: `(() => {
+        const normalize = (value) => String(value || '').toLowerCase().replace(/\\s+/g, ' ').trim();
+        const matchesDuplicate = (text) => {
+          const normalized = normalize(text);
+          return (
+            normalized.includes('already uploaded this file') ||
+            (normalized.includes('already uploaded') && normalized.includes('file'))
+          );
+        };
+        const dialogRoots = [
+          ...Array.from(document.querySelectorAll('[role="dialog"],dialog')),
+          document.body,
+        ];
+        const findButton = (root) => {
+          const buttons = Array.from(root.querySelectorAll('button,[role="button"]'));
+          for (const button of buttons) {
+            const label = normalize(button.textContent || button.getAttribute?.('aria-label') || '');
+            if (label === 'ok' || label === 'okay' || label.includes('ok')) return button;
+            if (label.includes('close') || label.includes('dismiss')) return button;
+          }
+          return null;
+        };
+        for (const root of dialogRoots) {
+          if (!(root instanceof HTMLElement)) continue;
+          const text = normalize(root.textContent || '');
+          if (!matchesDuplicate(text)) continue;
+          const button = findButton(root);
+          if (button) {
+            button.click();
+          }
+          return { dismissed: true };
+        }
+        return { dismissed: false };
+      })()`,
+      returnByValue: true,
+    })
+    .catch(() => null);
+  const dismissed = Boolean((outcome?.result?.value as { dismissed?: boolean } | undefined)?.dismissed);
+  if (dismissed) {
+    logger?.('Duplicate upload dialog detected; treating file as already uploaded.');
+  }
+  return dismissed;
+}
+
+export interface UploadAttachmentResult {
+  uiConfirmed: boolean;
+  duplicate: boolean;
+}
 
 export async function uploadAttachmentFile(
   deps: { runtime: ChromeClient['Runtime']; dom?: ChromeClient['DOM']; input?: ChromeClient['Input'] },
   attachment: BrowserAttachment,
   logger: BrowserLogger,
   options?: { expectedCount?: number },
-): Promise<boolean> {
+): Promise<UploadAttachmentResult> {
   const { runtime, dom, input } = deps;
   if (!dom) {
     throw new Error('DOM domain unavailable while uploading attachments.');
@@ -379,13 +435,17 @@ export async function uploadAttachmentFile(
   const isImageAttachment = /\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)$/i.test(expectedName);
   const attachmentUiTimeoutMs = 25_000;
   const attachmentUiSignalWaitMs = 5_000;
+  const handleDuplicateDialog = async (): Promise<boolean> => {
+    const dismissed = await dismissDuplicateUploadDialog(runtime, logger);
+    return dismissed;
+  };
 
   const initialSignals = await readAttachmentSignals(expectedName);
   let inputConfirmed = false;
 
   if (initialSignals.ui) {
     logger(`Attachment already present: ${path.basename(attachment.path)}`);
-    return true;
+    return { uiConfirmed: true, duplicate: false };
   }
   const isExpectedSatisfied = (signals: {
     fileCount?: number;
@@ -405,11 +465,11 @@ export async function uploadAttachmentFile(
     logger(
       `Attachment already present: composer shows ${satisfiedCount} file${satisfiedCount === 1 ? '' : 's'}`,
     );
-    return true;
+    return { uiConfirmed: true, duplicate: false };
   }
   if (initialInputSatisfied || initialSignals.input) {
     logger(`Attachment already queued in file input: ${path.basename(attachment.path)}`);
-    return true;
+    return { uiConfirmed: false, duplicate: false };
   }
 
   const documentNode = await dom.getDocument();
@@ -599,9 +659,13 @@ export async function uploadAttachmentFile(
       // keep it as a fallback, but strongly prefer visible (even sr-only 1x1) inputs.
       const localSet = new Set(localInputs);
       let idx = 0;
+      let supportsNonImage = false;
       const candidates = inputs.map((el) => {
         const accept = el.getAttribute('accept') || '';
         const imageOnly = acceptIsImageOnly(accept);
+        if (!imageOnly) {
+          supportsNonImage = true;
+        }
         const rect = el instanceof HTMLElement ? el.getBoundingClientRect() : { width: 0, height: 0 };
         const visible = rect.width > 0 && rect.height > 0;
         const local = localSet.has(el);
@@ -617,6 +681,8 @@ export async function uploadAttachmentFile(
 
       // Prefer higher scores first.
       candidates.sort((a, b) => b.score - a.score);
+      const nonImageCandidates = candidates.filter((c) => !c.imageOnly);
+      supportsNonImage = nonImageCandidates.length > 0;
       return {
         ok: candidates.length > 0,
         baselineChipCount,
@@ -625,6 +691,8 @@ export async function uploadAttachmentFile(
         baselineFileCount,
         baselineInputCount,
         order: candidates.map((c) => c.idx),
+        nonImageOrder: nonImageCandidates.map((c) => c.idx),
+        supportsNonImage,
       };
     })()`,
     returnByValue: true,
@@ -638,9 +706,13 @@ export async function uploadAttachmentFile(
         baselineFileCount?: number;
         baselineInputCount?: number;
         order?: number[];
+        nonImageOrder?: number[];
+        supportsNonImage?: boolean;
       }
     | undefined;
   const candidateOrder = Array.isArray(candidateValue?.order) ? candidateValue.order : [];
+  const nonImageOrder = Array.isArray(candidateValue?.nonImageOrder) ? candidateValue.nonImageOrder : [];
+  const supportsNonImage = Boolean(candidateValue?.supportsNonImage);
   const baselineChipCount = typeof candidateValue?.baselineChipCount === 'number' ? candidateValue.baselineChipCount : 0;
   const baselineChips = Array.isArray(candidateValue?.baselineChips) ? candidateValue.baselineChips : [];
   const baselineUploading = Boolean(candidateValue?.baselineUploading);
@@ -655,9 +727,21 @@ export async function uploadAttachmentFile(
       )
       .join('||');
   const baselineChipSignature = serializeChips(baselineChips);
-  if (!candidateValue?.ok || candidateOrder.length === 0) {
+  const resolvedOrder =
+    !isImageAttachment && nonImageOrder.length > 0 ? nonImageOrder : candidateOrder;
+  if (!candidateValue?.ok || resolvedOrder.length === 0) {
     await logDomFailure(runtime, logger, 'file-input-missing');
     throw new Error('Unable to locate ChatGPT file attachment input.');
+  }
+  if (!isImageAttachment && !supportsNonImage) {
+    throw new BrowserAutomationError(
+      `ChatGPT file uploads only support images on this surface; cannot upload ${path.basename(attachment.path)}.`,
+      {
+        stage: 'upload-attachment',
+        code: 'attachment-unsupported',
+        fileName: path.basename(attachment.path),
+      },
+    );
   }
 
   const hasChipDelta = (signals: {
@@ -889,8 +973,8 @@ export async function uploadAttachmentFile(
     return lastInputNames;
   };
   if (!inputConfirmed) {
-    for (let orderIndex = 0; orderIndex < candidateOrder.length; orderIndex += 1) {
-      const idx = candidateOrder[orderIndex];
+    for (let orderIndex = 0; orderIndex < resolvedOrder.length; orderIndex += 1) {
+      const idx = resolvedOrder[orderIndex];
       const queuedSignals = await readAttachmentSignals(expectedName);
       if (
         queuedSignals.ui ||
@@ -1043,6 +1127,9 @@ export async function uploadAttachmentFile(
       };
 
       let result = await runInputAttempt('set');
+      if (await handleDuplicateDialog()) {
+        return { uiConfirmed: true, duplicate: true };
+      }
       if (result.evaluation.status === 'ui') {
         confirmedAttachment = true;
         break;
@@ -1052,6 +1139,9 @@ export async function uploadAttachmentFile(
         await dom.setFileInputFiles({ nodeId: resultNode.nodeId, files: [] }).catch(() => undefined);
         await delay(150);
         result = await runInputAttempt('transfer');
+        if (await handleDuplicateDialog()) {
+          return { uiConfirmed: true, duplicate: true };
+        }
         if (result.evaluation.status === 'ui') {
           confirmedAttachment = true;
           break;
@@ -1082,6 +1172,9 @@ export async function uploadAttachmentFile(
 
       logger('Attachment not acknowledged after file input set; retrying with data transfer.');
       result = await runInputAttempt('transfer');
+      if (await handleDuplicateDialog()) {
+        return { uiConfirmed: true, duplicate: true };
+      }
       if (result.evaluation.status === 'ui') {
         confirmedAttachment = true;
         break;
@@ -1091,7 +1184,7 @@ export async function uploadAttachmentFile(
         inputConfirmed = true;
         break;
       }
-      if (orderIndex < candidateOrder.length - 1) {
+      if (orderIndex < resolvedOrder.length - 1) {
         await dom.setFileInputFiles({ nodeId: resultNode.nodeId, files: [] }).catch(() => undefined);
         await delay(150);
       }
@@ -1104,7 +1197,7 @@ export async function uploadAttachmentFile(
       (lastInputValue && matchesExpectedName(lastInputValue));
     await waitForAttachmentVisible(runtime, expectedName, attachmentUiTimeoutMs, logger);
     logger(inputHasFile ? 'Attachment queued (UI anchored, file input confirmed)' : 'Attachment queued (UI anchored)');
-    return true;
+    return { uiConfirmed: true, duplicate: false };
   }
 
   const inputNameCandidates = resolveInputNameCandidates();
@@ -1114,12 +1207,12 @@ export async function uploadAttachmentFile(
   if (await waitForAttachmentAnchored(runtime, expectedName, attachmentUiTimeoutMs)) {
     await waitForAttachmentVisible(runtime, expectedName, attachmentUiTimeoutMs, logger);
     logger(inputHasFile ? 'Attachment queued (UI anchored, file input confirmed)' : 'Attachment queued (UI anchored)');
-    return true;
+    return { uiConfirmed: true, duplicate: false };
   }
 
   if (inputConfirmed || inputHasFile) {
     logger('Attachment input accepted the file but UI did not acknowledge it; continuing with input confirmation only.');
-    return true;
+    return { uiConfirmed: false, duplicate: false };
   }
 
   await logDomFailure(runtime, logger, 'file-upload-missing');
@@ -1264,6 +1357,8 @@ export async function waitForAttachmentCompletion(
   let sawInputMatch = false;
   let attachmentMatchSince: number | null = null;
   let lastVerboseLog = 0;
+  let lastDuplicateCheck = 0;
+  let disabledSince: number | null = null;
   const expression = `(() => {
     const sendSelectors = ${JSON.stringify(SEND_BUTTON_SELECTORS)};
     const promptSelectors = ${JSON.stringify(INPUT_SELECTORS)};
@@ -1484,6 +1579,11 @@ export async function waitForAttachmentCompletion(
     };
   })()`;
   while (Date.now() < deadline) {
+    const now = Date.now();
+    if (now - lastDuplicateCheck > 1000) {
+      lastDuplicateCheck = now;
+      await dismissDuplicateUploadDialog(Runtime, logger);
+    }
     const response = await Runtime.evaluate({ expression, returnByValue: true });
     const { result } = response;
     const value = result?.value as {
@@ -1533,6 +1633,24 @@ export async function waitForAttachmentCompletion(
       const attachmentUiCount = typeof value.attachmentUiCount === 'number' ? value.attachmentUiCount : 0;
       const fileCountSatisfied = expectedNormalized.length > 0 && fileCount >= expectedNormalized.length;
       const attachmentUiSatisfied = expectedNormalized.length > 0 && attachmentUiCount >= expectedNormalized.length;
+      const disabledWithAttachments = value.state === 'disabled' && value.filesAttached && !value.uploading;
+      if (disabledWithAttachments) {
+        if (disabledSince === null) {
+          disabledSince = Date.now();
+        } else if (Date.now() - disabledSince > 8000) {
+          throw new BrowserAutomationError(
+            'Attachments appear stuck (send disabled with files attached); likely unsupported file type.',
+            {
+              stage: 'upload-attachment',
+              code: 'attachment-unsupported',
+              attachmentUiCount,
+              fileCount,
+            },
+          );
+        }
+      } else {
+        disabledSince = null;
+      }
       const matchesExpected = (expected: string): boolean => {
         const baseName = expected.split('/').pop()?.split('\\').pop() ?? expected;
         const normalizedExpected = baseName.toLowerCase().replace(/\s+/g, ' ').trim();

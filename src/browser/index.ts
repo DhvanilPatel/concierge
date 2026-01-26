@@ -431,7 +431,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       const baselineSnapshot = await readAssistantSnapshot(Runtime).catch(() => null);
       const baselineAssistantText =
         typeof baselineSnapshot?.text === 'string' ? baselineSnapshot.text.trim() : '';
-      const attachmentNames = submissionAttachments.map((a) => path.basename(a.path));
+      const attachmentNames: string[] = [];
       let attachmentWaitTimedOut = false;
       let inputOnlyAttachments = false;
       if (submissionAttachments.length > 0) {
@@ -442,13 +442,18 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
         for (let attachmentIndex = 0; attachmentIndex < submissionAttachments.length; attachmentIndex += 1) {
           const attachment = submissionAttachments[attachmentIndex];
           logger(`Uploading attachment: ${attachment.displayPath}`);
-          const uiConfirmed = await uploadAttachmentFile(
+          const uploadResult = await uploadAttachmentFile(
             { runtime: Runtime, dom: DOM, input: Input },
             attachment,
             logger,
             { expectedCount: attachmentIndex + 1 },
           );
-          if (!uiConfirmed) {
+          if (uploadResult.duplicate) {
+            logger(`Duplicate upload acknowledged for ${attachment.displayPath}; skipping wait for this file.`);
+          } else {
+            attachmentNames.push(path.basename(attachment.path));
+          }
+          if (!uploadResult.uiConfirmed && !uploadResult.duplicate) {
             inputOnlyAttachments = true;
           }
           await delay(500);
@@ -459,7 +464,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
         const waitBudget = Math.max(baseTimeout, 45_000) + (submissionAttachments.length - 1) * perFileTimeout;
         try {
           await waitForAttachmentCompletion(Runtime, waitBudget, attachmentNames, logger);
-          logger('All attachments uploaded');
+          logger(attachmentNames.length > 0 ? 'All attachments uploaded' : 'Attachments already present; composer ready');
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           if (/Attachments did not finish uploading before timeout/i.test(message)) {
@@ -521,9 +526,17 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       const isPromptTooLarge =
         error instanceof BrowserAutomationError &&
         (error.details as { code?: string } | undefined)?.code === 'prompt-too-large';
-      if (fallbackSubmission && isPromptTooLarge) {
-        // Learned: when prompts truncate, retry with file uploads so the UI receives the full content.
-        logger('[browser] Inline prompt too large; retrying with file uploads.');
+      const isAttachmentUnsupported =
+        error instanceof BrowserAutomationError &&
+        (error.details as { code?: string } | undefined)?.code === 'attachment-unsupported';
+      if (fallbackSubmission && (isPromptTooLarge || isAttachmentUnsupported)) {
+        if (isPromptTooLarge) {
+          // Learned: when prompts truncate, retry with file uploads so the UI receives the full content.
+          logger('[browser] Inline prompt too large; retrying with file uploads.');
+        } else {
+          logger('[browser] File uploads unsupported; retrying with inline prompt.');
+        }
+        await raceWithDisconnect(clearComposerAttachments(Runtime, 8_000, logger));
         await raceWithDisconnect(clearPromptComposer(Runtime, logger));
         await raceWithDisconnect(ensurePromptReady(Runtime, config.inputTimeoutMs, logger));
         const submission = await raceWithDisconnect(
@@ -1148,8 +1161,16 @@ async function runRemoteBrowserMode(
       const isPromptTooLarge =
         error instanceof BrowserAutomationError &&
         (error.details as { code?: string } | undefined)?.code === 'prompt-too-large';
-      if (options.fallbackSubmission && isPromptTooLarge) {
-        logger('[browser] Inline prompt too large; retrying with file uploads.');
+      const isAttachmentUnsupported =
+        error instanceof BrowserAutomationError &&
+        (error.details as { code?: string } | undefined)?.code === 'attachment-unsupported';
+      if (options.fallbackSubmission && (isPromptTooLarge || isAttachmentUnsupported)) {
+        if (isPromptTooLarge) {
+          logger('[browser] Inline prompt too large; retrying with file uploads.');
+        } else {
+          logger('[browser] File uploads unsupported; retrying with inline prompt.');
+        }
+        await clearComposerAttachments(Runtime, 8_000, logger);
         await clearPromptComposer(Runtime, logger);
         await ensurePromptReady(Runtime, config.inputTimeoutMs, logger);
         const submission = await submitOnce(options.fallbackSubmission.prompt, options.fallbackSubmission.attachments);

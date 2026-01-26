@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -22,6 +23,89 @@ const MEDIA_EXTENSIONS = new Set([
   '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.heic', '.heif',
   '.pdf',
 ]);
+
+function sanitizeUploadName(value: string): string {
+  const cleaned = value.replace(/[\\/:]+/g, '__').replace(/[^a-zA-Z0-9._-]+/g, '_');
+  return cleaned.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+function buildUploadFileName(displayPath: string, absolutePath: string): string {
+  const fallbackBase = path.basename(absolutePath);
+  const ext = path.extname(displayPath || fallbackBase) || path.extname(fallbackBase);
+  const base = displayPath || fallbackBase;
+  const sanitized = sanitizeUploadName(base) || fallbackBase.replace(/\s+/g, '_');
+  if (sanitized.length <= 180) return sanitized;
+  const hash = crypto.createHash('sha1').update(base).digest('hex').slice(0, 8);
+  const stem = sanitized.replace(new RegExp(`${ext.replace('.', '\\.')}$`), '');
+  const trimmed = stem.slice(0, 120);
+  return `${trimmed}__${hash}${ext}`;
+}
+
+async function ensureUniqueAttachmentUploads(
+  attachments: BrowserAttachment[],
+  cwd: string,
+): Promise<BrowserAttachment[]> {
+  if (attachments.length === 0) return attachments;
+
+  const deduped: BrowserAttachment[] = [];
+  const seenPaths = new Set<string>();
+  for (const attachment of attachments) {
+    const absolute = path.resolve(attachment.path);
+    if (seenPaths.has(absolute)) {
+      continue;
+    }
+    seenPaths.add(absolute);
+    deduped.push(attachment);
+  }
+
+  const byBase = new Map<string, BrowserAttachment[]>();
+  for (const attachment of deduped) {
+    const base = path.basename(attachment.path).toLowerCase();
+    const bucket = byBase.get(base) ?? [];
+    bucket.push(attachment);
+    byBase.set(base, bucket);
+  }
+
+  const duplicates = Array.from(byBase.entries()).filter(([, list]) => list.length > 1);
+  if (duplicates.length === 0) {
+    return deduped;
+  }
+
+  const uploadDir = await fs.mkdtemp(path.join(os.tmpdir(), 'concierge-uploads-'));
+  const usedNames = new Set<string>();
+  const result: BrowserAttachment[] = [];
+
+  for (const attachment of deduped) {
+    const base = path.basename(attachment.path).toLowerCase();
+    const isDuplicate = (byBase.get(base)?.length ?? 0) > 1;
+    if (!isDuplicate) {
+      result.push(attachment);
+      continue;
+    }
+
+    const rel =
+      attachment.displayPath ||
+      path.relative(cwd, attachment.path) ||
+      path.basename(attachment.path);
+    let fileName = buildUploadFileName(rel, attachment.path);
+    const ext = path.extname(fileName);
+    const stem = ext ? fileName.slice(0, -ext.length) : fileName;
+    let counter = 1;
+    while (usedNames.has(fileName.toLowerCase())) {
+      counter += 1;
+      fileName = `${stem}__${counter}${ext}`;
+    }
+    usedNames.add(fileName.toLowerCase());
+    const uploadPath = path.join(uploadDir, fileName);
+    await fs.copyFile(attachment.path, uploadPath);
+    result.push({
+      ...attachment,
+      path: uploadPath,
+    });
+  }
+
+  return result;
+}
 
 export function isMediaFile(filePath: string): boolean {
   const ext = path.extname(filePath).toLowerCase();
@@ -112,7 +196,7 @@ export async function assembleBrowserPrompt(
     .join('\n\n')
     .trim();
 
-  const attachments: BrowserAttachment[] = [...selectedPlan.attachments, ...mediaAttachments];
+  let attachments: BrowserAttachment[] = [...selectedPlan.attachments, ...mediaAttachments];
 
   const shouldBundle = selectedPlan.shouldBundle;
   let bundleText: string | null = null;
@@ -136,6 +220,7 @@ export async function assembleBrowserPrompt(
     attachments.push(...mediaAttachments);
     bundled = { originalCount: sections.length, bundlePath };
   }
+  attachments = await ensureUniqueAttachmentUploads(attachments, cwd);
 
   const inlineFileCount = selectedPlan.inlineFileCount;
   const modelConfig = isKnownModel(runOptions.model) ? MODEL_CONFIGS[runOptions.model] : MODEL_CONFIGS['gpt-5.1'];
@@ -171,7 +256,7 @@ export async function assembleBrowserPrompt(
   let fallback: BrowserPromptArtifacts['fallback'] = null;
   if (attachmentsPolicy === 'auto' && selectedPlan.mode === 'inline' && sections.length > 0) {
     const fallbackComposerText = baseComposerSections.join('\n\n').trim();
-    const fallbackAttachments = [...uploadPlan.attachments, ...mediaAttachments];
+    let fallbackAttachments = [...uploadPlan.attachments, ...mediaAttachments];
     let fallbackBundled: { originalCount: number; bundlePath: string } | null = null;
     if (uploadPlan.shouldBundle) {
       const bundleDir = await fs.mkdtemp(path.join(os.tmpdir(), 'concierge-browser-bundle-'));
@@ -192,10 +277,21 @@ export async function assembleBrowserPrompt(
       fallbackAttachments.push(...mediaAttachments);
       fallbackBundled = { originalCount: sections.length, bundlePath };
     }
+    fallbackAttachments = await ensureUniqueAttachmentUploads(fallbackAttachments, cwd);
     fallback = {
       composerText: fallbackComposerText,
       attachments: fallbackAttachments,
       bundled: fallbackBundled,
+    };
+  }
+  if (!fallback && sections.length > 0 && selectedPlan.mode !== 'inline') {
+    const fallbackComposerText = [...baseComposerSections, inlinePlan.inlineBlock].filter(Boolean).join('\n\n').trim();
+    let fallbackAttachments = [...mediaAttachments];
+    fallbackAttachments = await ensureUniqueAttachmentUploads(fallbackAttachments, cwd);
+    fallback = {
+      composerText: fallbackComposerText,
+      attachments: fallbackAttachments,
+      bundled: null,
     };
   }
 
