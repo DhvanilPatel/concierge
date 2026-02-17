@@ -35,11 +35,14 @@ export async function clickAssistantImageDownload(
   return Boolean(value?.clicked);
 }
 
+export const IMAGE_SETTLE_DELAY_MS = 120_000; // 2 minutes default settle time
+
 export async function waitForAssistantImages(
   Runtime: ChromeClient['Runtime'],
   timeoutMs: number,
   logger: BrowserLogger,
   minTurnIndex?: number,
+  settleMs: number = IMAGE_SETTLE_DELAY_MS,
 ): Promise<AssistantImageSnapshot> {
   logger('Waiting for generated images');
   const deadline = Date.now() + Math.max(0, timeoutMs);
@@ -47,10 +50,15 @@ export async function waitForAssistantImages(
   let lastSignature = '';
   let stableCycles = 0;
   let best: AssistantImageSnapshot | null = null;
+  let firstSeenAt: number | null = null;
   while (Date.now() < deadline) {
     const snapshot = await readAssistantImageSnapshot(Runtime, minTurnIndex).catch(() => null);
     if (snapshot && snapshot.urls.length > 0) {
       best = snapshot;
+      if (firstSeenAt === null) {
+        firstSeenAt = Date.now();
+        logger(`Image URL(s) detected, waiting ${Math.round(settleMs / 1000)}s for render to complete`);
+      }
       const signature = snapshot.urls.slice().sort().join('|');
       if (snapshot.urls.length === lastCount && signature === lastSignature) {
         stableCycles += 1;
@@ -59,7 +67,9 @@ export async function waitForAssistantImages(
         lastCount = snapshot.urls.length;
         lastSignature = signature;
       }
-      if (stableCycles >= 2) {
+      // Only return after both URL stability AND the settle delay have elapsed
+      const settled = Date.now() - firstSeenAt >= settleMs;
+      if (stableCycles >= 2 && settled) {
         return snapshot;
       }
     } else {
