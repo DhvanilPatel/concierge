@@ -54,7 +54,7 @@ export async function terminateChrome(chrome: LaunchedChrome, logger?: BrowserLo
 
   const processHandle = chrome.process;
   const pid = processHandle?.pid ?? chrome.pid;
-  if (!processHandle || !pid || pid === process.pid) {
+  if (!pid || pid === process.pid) {
     return;
   }
   if (!isProcessAlive(pid)) {

@@ -421,7 +421,7 @@ program
 
 const sessionCommand = program
   .command('session [id]')
-  .description('Attach to a stored session or list recent sessions when no ID is provided.')
+  .description('Attach to a stored session or list recent sessions. Use --clear to delete old sessions.')
   .option('--hours <hours>', 'Look back this many hours when listing sessions (default 24).', parseFloatOption, 24)
   .option('--limit <count>', 'Maximum sessions to show when listing (max 1000).', parseIntOption, 100)
   .option('--all', 'Include all stored sessions regardless of age.', false)
@@ -438,7 +438,7 @@ const sessionCommand = program
 
 const statusCommand = program
   .command('status [id]')
-  .description('List recent sessions (24h window by default) or attach to a session when an ID is provided.')
+  .description('List recent sessions (24h default) or attach to one. Use --clear to delete old sessions.')
   .option('--hours <hours>', 'Look back this many hours (default 24).', parseFloatOption, 24)
   .option('--limit <count>', 'Maximum sessions to show (max 1000).', parseIntOption, 100)
   .option('--all', 'Include all stored sessions regardless of age.', false)
